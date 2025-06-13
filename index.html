@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Particle Character</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        #game-container {
+            border: 2px solid #34495e;
+            border-radius: 8px;
+        }
+
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="controls">
+        Use ARROW KEYS or WASD to move<br>
+        SPACE to jump
+    </div>
+    <div id="game-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.70.0/phaser.min.js"></script>
+    <script>
+        class DynamicCharacter {
+            constructor(scene, x, y) {
+                this.scene = scene;
+                this.x = x;
+                this.y = y;
+
+                // Physics body (the hat/head)
+                this.body = scene.physics.add.sprite(x, y, null);
+                this.body.setSize(30, 30);
+                this.body.setBounce(0.3);
+                this.body.setCollideWorldBounds(true);
+                this.body.setDrag(300);
+
+                // Limb properties
+                this.limbs = {
+                    leftArm: { points: [], targetAngle: 0, swingSpeed: 0 },
+                    rightArm: { points: [], targetAngle: 0, swingSpeed: 0 },
+                    leftLeg: { points: [], targetAngle: 0, swingSpeed: 0 },
+                    rightLeg: { points: [], targetAngle: 0, swingSpeed: 0 }
+                };
+
+                // Animation state
+                this.walkCycle = 0;
+                this.isWalking = false;
+                this.isJumping = false;
+                this.facing = 1; // 1 for right, -1 for left
+
+                // Initialize limb positions
+                this.initializeLimbs();
+            }
+
+            initializeLimbs() {
+                const armLength = 25;
+                const legLength = 30;
+
+                // Initialize arm positions
+                this.limbs.leftArm.points = [
+                    { x: 0, y: 0 }, // shoulder
+                    { x: -15, y: 10 }, // elbow
+                    { x: -armLength, y: 15 } // hand
+                ];
+
+                this.limbs.rightArm.points = [
+                    { x: 0, y: 0 }, // shoulder
+                    { x: 15, y: 10 }, // elbow
+                    { x: armLength, y: 15 } // hand
+                ];
+
+                // Initialize leg positions
+                this.limbs.leftLeg.points = [
+                    { x: 0, y: 0 }, // hip
+                    { x: -8, y: 20 }, // knee
+                    { x: -12, y: legLength + 10 } // foot
+                ];
+
+                this.limbs.rightLeg.points = [
+                    { x: 0, y: 0 }, // hip
+                    { x: 8, y: 20 }, // knee
+                    { x: 12, y: legLength + 10 } // foot
+                ];
+            }
+
+            update() {
+                // Update walking state
+                this.isWalking = Math.abs(this.body.body.velocity.x) > 10;
+                this.isJumping = this.body.body.velocity.y < -10;
+
+                // Update facing direction
+                if (this.body.body.velocity.x > 5) this.facing = 1;
+                else if (this.body.body.velocity.x < -5) this.facing = -1;
+
+                // Update walk cycle
+                if (this.isWalking) {
+                    this.walkCycle += 0.2;
+                } else {
+                    this.walkCycle *= 0.95; // Slow down when not walking
+                }
+
+                // Update limb animations
+                this.updateLimbAnimations();
+            }
+
+            updateLimbAnimations() {
+                const bodyX = this.body.x;
+                const bodyY = this.body.y;
+
+                if (this.isWalking) {
+                    // Walking animation
+                    const leftArmSwing = Math.sin(this.walkCycle) * 0.3;
+                    const rightArmSwing = Math.sin(this.walkCycle + Math.PI) * 0.3;
+                    const leftLegSwing = Math.sin(this.walkCycle + Math.PI) * 0.4;
+                    const rightLegSwing = Math.sin(this.walkCycle) * 0.4;
+
+                    this.animateLimb('leftArm', bodyX - 10, bodyY, leftArmSwing, 25);
+                    this.animateLimb('rightArm', bodyX + 10, bodyY, rightArmSwing, 25);
+                    this.animateLimb('leftLeg', bodyX - 5, bodyY + 10, leftLegSwing, 30);
+                    this.animateLimb('rightLeg', bodyX + 5, bodyY + 10, rightLegSwing, 30);
+                } else if (this.isJumping) {
+                    // Jumping animation - limbs spread out
+                    this.animateLimb('leftArm', bodyX - 10, bodyY, -0.5, 25);
+                    this.animateLimb('rightArm', bodyX + 10, bodyY, 0.5, 25);
+                    this.animateLimb('leftLeg', bodyX - 5, bodyY + 10, -0.3, 30);
+                    this.animateLimb('rightLeg', bodyX + 5, bodyY + 10, 0.3, 30);
+                } else {
+                    // Idle animation - gentle sway
+                    const idleSway = Math.sin(this.scene.time.now * 0.002) * 0.1;
+                    this.animateLimb('leftArm', bodyX - 10, bodyY, idleSway, 25);
+                    this.animateLimb('rightArm', bodyX + 10, bodyY, -idleSway, 25);
+                    this.animateLimb('leftLeg', bodyX - 5, bodyY + 10, 0, 30);
+                    this.animateLimb('rightLeg', bodyX + 5, bodyY + 10, 0, 30);
+                }
+            }
+
+            animateLimb(limbName, startX, startY, swingAngle, length) {
+                const limb = this.limbs[limbName];
+                const isArm = limbName.includes('Arm');
+                const isLeft = limbName.includes('left');
+
+                // Calculate positions with simple inverse kinematics
+                const baseAngle = isArm ? (isLeft ? -0.2 : 0.2) : (isLeft ? -0.1 : 0.1);
+                const angle1 = baseAngle + swingAngle;
+                const angle2 = angle1 + (swingAngle * 0.5);
+
+                const segment1Length = length * 0.6;
+                const segment2Length = length * 0.4;
+
+                // First joint (elbow/knee)
+                const joint1X = startX + Math.cos(angle1) * segment1Length * this.facing;
+                const joint1Y = startY + Math.sin(angle1) * segment1Length;
+
+                // Second joint (hand/foot)
+                const joint2X = joint1X + Math.cos(angle2) * segment2Length * this.facing;
+                const joint2Y = joint1Y + Math.sin(angle2) * segment2Length;
+
+                // Update limb points
+                limb.points[0] = { x: startX, y: startY };
+                limb.points[1] = { x: joint1X, y: joint1Y };
+                limb.points[2] = { x: joint2X, y: joint2Y };
+            }
+
+            draw(graphics) {
+                // Draw the hat/head
+                graphics.fillStyle(0x8B4513); // Brown color for hat
+                graphics.fillCircle(this.body.x, this.body.y - 5, 18);
+
+                // Draw hat brim
+                graphics.fillStyle(0x654321);
+                graphics.fillEllipse(this.body.x, this.body.y + 5, 35, 8);
+
+                // Draw face
+                graphics.fillStyle(0xFFDBB3); // Skin color
+                graphics.fillCircle(this.body.x, this.body.y + 8, 12);
+
+                // Draw eyes
+                graphics.fillStyle(0x000000);
+                graphics.fillCircle(this.body.x - 4 * this.facing, this.body.y + 5, 2);
+                graphics.fillCircle(this.body.x + 4 * this.facing, this.body.y + 5, 2);
+
+                // Draw limbs
+                graphics.lineStyle(4, 0xFFDBB3, 1); // Skin color for limbs
+
+                Object.values(this.limbs).forEach(limb => {
+                    if (limb.points.length >= 2) {
+                        for (let i = 0; i < limb.points.length - 1; i++) {
+                            graphics.lineBetween(
+                                limb.points[i].x, limb.points[i].y,
+                                limb.points[i + 1].x, limb.points[i + 1].y
+                            );
+                        }
+
+                        // Draw joints as small circles
+                        limb.points.forEach((point, index) => {
+                            if (index > 0) { // Skip the attachment point
+                                graphics.fillStyle(0xCD853F);
+                                graphics.fillCircle(point.x, point.y, 3);
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+        class GameScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'GameScene' });
+            }
+
+            preload() {
+                // Create a simple ground texture
+                this.add.graphics()
+                    .fillStyle(0x228B22)
+                    .fillRect(0, 0, 1, 1)
+                    .generateTexture('ground', 1, 1);
+            }
+
+            create() {
+                // Create ground
+                this.ground = this.physics.add.staticGroup();
+                for (let i = 0; i < 800; i += 32) {
+                    this.ground.create(i + 16, 568, 'ground').setScale(32, 32);
+                }
+
+                // Create some platforms
+                this.platforms = this.physics.add.staticGroup();
+                this.platforms.create(200, 450, 'ground').setScale(100, 20);
+                this.platforms.create(500, 350, 'ground').setScale(100, 20);
+                this.platforms.create(700, 250, 'ground').setScale(100, 20);
+
+                // Create character
+                this.character = new DynamicCharacter(this, 100, 400);
+
+                // Physics collisions
+                this.physics.add.collider(this.character.body, this.ground);
+                this.physics.add.collider(this.character.body, this.platforms);
+
+                // Create graphics object for drawing
+                this.graphics = this.add.graphics();
+
+                // Input
+                this.cursors = this.input.keyboard.createCursorKeys();
+                this.wasd = this.input.keyboard.addKeys('Z,S,Q,D');
+            }
+
+            update() {
+                // Character movement
+                const speed = 200;
+                const jumpPower = 400;
+
+                // Horizontal movement
+                if (this.cursors.left.isDown || this.wasd.Q.isDown) {
+                    this.character.body.setVelocityX(-speed);
+                } else if (this.cursors.right.isDown || this.wasd.D.isDown) {
+                    this.character.body.setVelocityX(speed);
+                }
+
+                // Jumping
+                if ((this.cursors.up.isDown || this.wasd.Z.isDown || this.cursors.space.isDown) &&
+                    this.character.body.body.touching.down) {
+                    this.character.body.setVelocityY(-jumpPower);
+                }
+
+                // Update character
+                this.character.update();
+
+                // Clear and redraw
+                this.graphics.clear();
+                this.character.draw(this.graphics);
+            }
+        }
+
+        // Game configuration
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: 'game-container',
+            backgroundColor: '#87CEEB',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 800 },
+                    debug: false
+                }
+            },
+            scene: GameScene
+        };
+
+        // Start the game
+        const game = new Phaser.Game(config);
+    </script>
+</body>
+
+</html>
