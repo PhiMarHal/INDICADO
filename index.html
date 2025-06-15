@@ -40,11 +40,8 @@
                 super({ key: 'InfiniteRunner' });
                 this.gameState = 'menu';
                 this.scrollSpeed = 300;
-                this.jumpVelocity = -600;
-                this.doubleJumpVelocity = -400;
-                this.tripleJumpVelocity = -300;
-                this.currentJump = 0;
-                this.canJump = true;
+                this.jumpCount = 0;
+                this.maxJumps = 3;
                 this.gameTime = 0;
                 this.spikeSpawnTimer = 0;
                 this.spikeSpawnInterval = 2000;
@@ -174,8 +171,7 @@
             startGame() {
                 this.gameState = 'playing';
                 this.gameTime = 0;
-                this.currentJump = 0;
-                this.canJump = true;
+                this.jumpCount = 0;
 
                 this.playButton.setVisible(false);
                 this.playButtonText.setVisible(false);
@@ -218,50 +214,55 @@
                 this.flyingSpikes.clear(true, true);
 
                 this.gameTime = 0;
-                this.currentJump = 0;
+                this.jumpCount = 0;
             }
 
             jump() {
-                const onGround = this.hero.body.touching.down;
+                // Only jump if we haven't exceeded max jumps
+                if (this.jumpCount < this.maxJumps) {
+                    this.jumpCount++;
 
-                if (this.currentJump === 0 && onGround) {
-                    // First jump
-                    this.hero.body.setVelocityY(this.jumpVelocity);
-                    this.currentJump = 1;
-                } else if (this.currentJump === 1 && this.canJump) {
-                    // Double jump
-                    this.hero.body.setVelocityY(this.doubleJumpVelocity);
-                    this.currentJump = 2;
-                    this.canJump = false;
+                    if (this.jumpCount === 1) {
+                        // Normal jump - stronger
+                        this.hero.body.setVelocityY(-750);
+                        this.hero.setRotation(0);
+                    } else if (this.jumpCount === 2) {
+                        // Double jump - ensure we're in air and add more power
+                        this.hero.body.setVelocityY(-500);
+                        // Kill any existing rotation tweens
+                        this.tweens.killTweensOf(this.hero);
+                        this.hero.setRotation(0);
+                        this.tweens.add({
+                            targets: this.hero,
+                            rotation: Math.PI * 2,
+                            duration: 300,
+                            ease: 'Power2'
+                        });
+                    } else if (this.jumpCount === 3) {
+                        // Triple jump - more power and dramatic shake
+                        this.hero.body.setVelocityY(-400);
+                        this.hero.setRotation(0);
 
-                    // Rotation animation
-                    this.tweens.add({
-                        targets: this.hero,
-                        rotation: Math.PI * 2,
-                        duration: 500,
-                        ease: 'Linear'
-                    });
-                } else if (this.currentJump === 2 && this.canJump) {
-                    // Triple jump
-                    this.hero.body.setVelocityY(this.tripleJumpVelocity);
-                    this.currentJump = 3;
-                    this.canJump = false;
+                        // More dramatic shaking effect - larger amplitude, faster
+                        this.tweens.add({
+                            targets: this.hero,
+                            x: this.hero.x - 20,
+                            duration: 80,
+                            yoyo: true,
+                            repeat: 5,
+                            ease: 'Sine.inOut'
+                        });
 
-                    // Temporarily reduce gravity for float effect
-                    this.hero.body.setGravityY(400);
-
-                    // Shake animation
-                    this.tweens.add({
-                        targets: this.hero,
-                        x: this.hero.x + 5,
-                        duration: 50,
-                        yoyo: true,
-                        repeat: 10,
-                        ease: 'Linear',
-                        onComplete: () => {
-                            this.hero.body.setGravityY(0); // Reset to world gravity
-                        }
-                    });
+                        // Add vertical shake too for more "fluttering"
+                        this.tweens.add({
+                            targets: this.hero,
+                            y: this.hero.y - 5,
+                            duration: 60,
+                            yoyo: true,
+                            repeat: 7,
+                            ease: 'Sine.inOut'
+                        });
+                    }
                 }
             }
 
@@ -280,25 +281,20 @@
                         this.jump();
                     }
 
-                    // Reset jump when landing
-                    if (this.hero.body.touching.down && this.currentJump > 0) {
-                        this.currentJump = 0;
+                    // Reset jump count when touching ground
+                    if (this.hero.body.touching.down) {
+                        this.jumpCount = 0;
                         this.hero.setRotation(0);
                     }
 
-                    // Allow next jump after key release
-                    if (Phaser.Input.Keyboard.JustUp(this.jumpKey)) {
-                        this.canJump = true;
-                    }
-
-                    // Running bounce effect - visual only
-                    if (this.hero.body.touching.down && this.currentJump === 0) {
+                    // Running bounce effect - visual only, more enthusiastic
+                    if (this.hero.body.touching.down && this.jumpCount === 0) {
                         if (!this.heroBaseY) {
                             this.heroBaseY = this.hero.y;
                         }
-                        this.runBouncePhase += 0.15;
-                        const bounce = Math.sin(this.runBouncePhase) * 2;
-                        this.hero.y = this.heroBaseY + bounce;
+                        this.runBouncePhase += 0.25; // Faster bounce
+                        const bounce = Math.abs(Math.sin(this.runBouncePhase)) * 6; // Higher bounce, always positive
+                        this.hero.y = this.heroBaseY - bounce; // Subtract to bounce UP
                     } else {
                         this.heroBaseY = 0;
                     }
