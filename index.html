@@ -212,8 +212,11 @@
                 this.hero.y = this.floorY - 32;
                 this.hero.body.setVelocity(0, 0);
                 this.hero.body.setGravityY(2400);
+                this.hero.body.setAllowGravity(true);
+                this.hero.body.setImmovable(false);
                 this.hero.setRotation(0);
                 this.hero.clearTint();
+                this.tweens.killTweensOf(this.hero);
 
                 this.spikes.clear(true, true);
                 this.flyingSpikes.clear(true, true);
@@ -290,12 +293,6 @@
                     if (Phaser.Input.Keyboard.JustDown(this.jumpKey) && this.canJump && this.jumpCooldown <= 0) {
                         this.jump();
                         this.jumpCooldown = 200;
-                    }
-
-                    if (this.jumpKey.isDown && this.jumpCount === 1 && !this.hero.body.touching.down) {
-                        const maxVelocity = -2000;
-                        this.hero.body.velocity.y = Math.max(this.hero.body.velocity.y - 20, maxVelocity);
-                        console.log('Jump hold - Velocity:', this.hero.body.velocity.y);
                     }
 
                     if (this.hero.body.touching.down) {
