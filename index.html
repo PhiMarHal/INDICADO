@@ -374,18 +374,14 @@
                 if (position === 'ground') {
                     spike = this.spikes.create(1100, this.floorY, 'spike');
                     spike.setOrigin(0.5, 1);
-                    spike.setPosition(1100, this.floorY);
-                    spike.setCrop(0, this.spikeOriginalHeight - spikeHeight, this.spikeOriginalWidth, spikeHeight);
-                    spike.body.setSize(40, spikeHeight * 0.9);
-                    spike.body.setOffset((this.spikeOriginalWidth - 40) / 2, -spikeHeight * 0.9);
+                    spike.setScale(scaleX, scaleY);
+                    spike.body.setSize(40, spikeHeight);
                 } else {
                     spike = this.spikes.create(1100, this.ceilingY, 'spike');
                     spike.setOrigin(0.5, 0);
-                    spike.setPosition(1100, this.ceilingY);
-                    spike.setCrop(0, 0, this.spikeOriginalWidth, spikeHeight);
+                    spike.setScale(scaleX, scaleY);
                     spike.setFlipY(true);
-                    spike.body.setSize(40, spikeHeight * 0.9);
-                    spike.body.setOffset((this.spikeOriginalWidth - 40) / 2, 0);
+                    spike.body.setSize(40, spikeHeight);
                 }
 
                 spike.body.setAllowGravity(false);
