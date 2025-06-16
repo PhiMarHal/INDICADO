@@ -45,8 +45,10 @@
                 this.gameTime = 0;
                 this.spikeSpawnTimer = 0;
                 this.spikeSpawnInterval = 2000;
+                this.canJump = false;
+                this.jumpCooldown = 0;
+                this.jumpHoldTime = 0;
 
-                // Game area - 1000x1000 centered in 1000x1600
                 this.gameAreaTop = 300;
                 this.gameAreaBottom = 1300;
                 this.gameAreaHeight = 1000;
@@ -56,13 +58,11 @@
                 this.runBouncePhase = 0;
                 this.heroBaseY = 0;
 
-                // Spike original dimensions
                 this.spikeOriginalWidth = 118;
                 this.spikeOriginalHeight = 946;
             }
 
             preload() {
-                // Load assets
                 this.load.image('hero', 'assets/hero.png');
                 this.load.image('rock', 'assets/rock.png');
                 this.load.image('hat', 'assets/hat.png');
@@ -75,12 +75,10 @@
             }
 
             create() {
-                // Background
                 this.add.rectangle(500, 150, 1000, 300, 0x000000);
                 this.add.rectangle(500, 800, 1000, 1000, 0x87CEEB);
                 this.add.rectangle(500, 1450, 1000, 300, 0x000000);
 
-                // Floor visual
                 this.floorTiles = [];
                 for (let i = 0; i < 3; i++) {
                     const tile = this.add.tileSprite(i * 750, this.floorY, 1500, 250, 'floor');
@@ -89,49 +87,39 @@
                     this.floorTiles.push(tile);
                 }
 
-                // Create ground collision using a rectangle - position it slightly below floor line
                 this.platforms = this.physics.add.staticGroup();
-
-                // Create ground as a rectangle - position at floor line + 20 pixels down
                 const ground = this.add.rectangle(500, this.floorY + 20, 2000, 40, 0xffffff);
                 ground.setVisible(false);
                 this.physics.add.existing(ground, true);
                 this.platforms.add(ground);
 
-                // Create ceiling as a rectangle
                 const ceiling = this.add.rectangle(500, this.ceilingY, 2000, 40, 0xffffff);
                 ceiling.setVisible(false);
                 this.physics.add.existing(ceiling, true);
                 this.platforms.add(ceiling);
 
-                // Hero
                 this.hero = this.physics.add.sprite(250, 1000, 'hero');
                 this.hero.setDisplaySize(64, 64);
                 this.hero.setBounce(0.1);
                 this.hero.setCollideWorldBounds(true);
 
-                // Boulder
-                this.boulder = this.physics.add.sprite(-200, this.floorY - 128, 'rock');
-                this.boulder.setDisplaySize(256, 256);
+                this.boulder = this.physics.add.sprite(-200, this.floorY - 192, 'rock');
+                this.boulder.setDisplaySize(384, 384);
                 this.boulder.setVisible(false);
 
-                // Hat
-                this.boulderHat = this.add.sprite(-200, this.floorY - 256, 'hat');
+                this.boulderHat = this.add.sprite(-200, this.floorY - 320, 'hat');
                 this.boulderHat.setDisplaySize(128, 128);
                 this.boulderHat.setVisible(false);
 
-                // Spike groups
                 this.spikes = this.physics.add.group();
                 this.flyingSpikes = this.physics.add.group();
 
-                // Timer - in the black area, white text
                 this.timerText = this.add.text(850, 50, '00:00:00', {
                     fontSize: '24px',
                     fill: '#FFFFFF',
                     fontFamily: 'monospace'
                 });
 
-                // Menu
                 this.playButton = this.add.rectangle(500, 800, 200, 80, 0x4CAF50);
                 this.playButtonText = this.add.text(500, 800, 'PLAY', {
                     fontSize: '32px',
@@ -141,7 +129,6 @@
                 this.playButton.setInteractive();
                 this.playButton.on('pointerdown', () => this.startGame());
 
-                // Restart button
                 this.restartButton = this.add.rectangle(500, 850, 200, 80, 0xFF5722);
                 this.restartButtonText = this.add.text(500, 850, 'RESTART', {
                     fontSize: '28px',
@@ -153,43 +140,49 @@
                 this.restartButton.setInteractive();
                 this.restartButton.on('pointerdown', () => this.restartGame());
 
-                // Input
                 this.jumpKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
                 this.input.on('pointerdown', () => {
-                    if (this.gameState === 'playing') {
+                    if (this.canJump && this.gameState === 'playing' && this.jumpCooldown <= 0) {
                         this.jump();
+                        this.jumpCooldown = 200;
                     }
                 });
 
-                // Physics
                 this.physics.add.collider(this.hero, this.platforms);
                 this.physics.add.collider(this.boulder, this.platforms);
                 this.physics.add.overlap(this.hero, this.spikes, this.hitSpike, null, this);
                 this.physics.add.overlap(this.boulder, this.spikes, this.boulderHitSpike, null, this);
+
+                // Set world bounds to active game area
+                this.physics.world.setBounds(0, this.gameAreaTop, 1000, this.gameAreaHeight);
             }
 
             startGame() {
                 this.gameState = 'playing';
                 this.gameTime = 0;
                 this.jumpCount = 0;
+                this.canJump = false;
+                this.time.delayedCall(100, () => { this.canJump = true; }, [], this);
 
                 this.playButton.setVisible(false);
                 this.playButtonText.setVisible(false);
 
-                // Show boulder
                 this.boulder.setVisible(true);
                 this.boulder.x = 50;
                 this.boulderHat.setVisible(true);
 
-                // Reset hero
                 this.hero.x = 250;
-                this.hero.y = 1000;
+                this.hero.y = this.floorY - 32;
                 this.hero.body.setVelocity(0, 0);
+                this.hero.body.setGravityY(2400);
                 this.hero.setRotation(0);
 
-                // Clear spikes
                 this.spikes.clear(true, true);
                 this.flyingSpikes.clear(true, true);
+
+                console.log('Game started - Hero position:', this.hero.x, this.hero.y);
+                console.log('Hero velocity:', this.hero.body.velocity.x, this.hero.body.velocity.y);
+                console.log('Hero gravity:', this.hero.body.gravity.y);
             }
 
             restartGame() {
@@ -202,11 +195,15 @@
 
                 this.boulder.setVisible(false);
                 this.boulder.x = -200;
+                this.boulder.y = this.floorY - 192;
                 this.boulderHat.setVisible(false);
+                this.boulderHat.x = -200;
+                this.boulderHat.y = this.boulder.y - 128;
 
                 this.hero.x = 250;
-                this.hero.y = 1000;
+                this.hero.y = this.floorY - 32;
                 this.hero.body.setVelocity(0, 0);
+                this.hero.body.setGravityY(2400);
                 this.hero.setRotation(0);
                 this.hero.clearTint();
 
@@ -215,21 +212,27 @@
 
                 this.gameTime = 0;
                 this.jumpCount = 0;
+                this.canJump = false;
+                this.time.delayedCall(100, () => { this.canJump = true; }, [], this);
+
+                console.log('Game restarted - Hero position:', this.hero.x, this.hero.y);
+                console.log('Hero velocity:', this.hero.body.velocity.x, this.hero.body.velocity.y);
+                console.log('Hero gravity:', this.hero.body.gravity.y);
             }
 
             jump() {
-                // Only jump if we haven't exceeded max jumps
-                if (this.jumpCount < this.maxJumps) {
+                if (this.jumpCount < this.maxJumps && this.jumpCooldown <= 0) {
+                    const previousJumpCount = this.jumpCount;
                     this.jumpCount++;
 
-                    if (this.jumpCount === 1) {
-                        // Normal jump - stronger
-                        this.hero.body.setVelocityY(-750);
+                    if (this.jumpCount === 1 && previousJumpCount === 0) {
+                        this.hero.body.setVelocityY(-1600);
+                        this.hero.body.setGravityY(2400);
                         this.hero.setRotation(0);
-                    } else if (this.jumpCount === 2) {
-                        // Double jump - ensure we're in air and add more power
-                        this.hero.body.setVelocityY(-500);
-                        // Kill any existing rotation tweens
+                        console.log('First jump initiated - Velocity:', this.hero.body.velocity.y);
+                    } else if (this.jumpCount === 2 && previousJumpCount === 1) {
+                        this.hero.body.setVelocityY(-1200);
+                        this.hero.body.setGravityY(1500);
                         this.tweens.killTweensOf(this.hero);
                         this.hero.setRotation(0);
                         this.tweens.add({
@@ -238,12 +241,10 @@
                             duration: 300,
                             ease: 'Power2'
                         });
-                    } else if (this.jumpCount === 3) {
-                        // Triple jump - more power and dramatic shake
-                        this.hero.body.setVelocityY(-400);
+                    } else if (this.jumpCount === 3 && previousJumpCount === 2) {
+                        this.hero.body.setVelocityY(-500);
+                        this.hero.body.setGravityY(800);
                         this.hero.setRotation(0);
-
-                        // More dramatic shaking effect - larger amplitude, faster
                         this.tweens.add({
                             targets: this.hero,
                             x: this.hero.x - 20,
@@ -252,8 +253,6 @@
                             repeat: 5,
                             ease: 'Sine.inOut'
                         });
-
-                        // Add vertical shake too for more "fluttering"
                         this.tweens.add({
                             targets: this.hero,
                             y: this.hero.y - 5,
@@ -263,12 +262,12 @@
                             ease: 'Sine.inOut'
                         });
                     }
+                    this.jumpCooldown = 200; // 200ms cooldown between jumps
                 }
             }
 
             update(time, delta) {
                 if (this.gameState === 'playing') {
-                    // Update timer
                     this.gameTime += delta;
                     const totalCentiseconds = Math.floor(this.gameTime / 10);
                     const minutes = Math.floor(totalCentiseconds / 6000);
@@ -276,47 +275,57 @@
                     const centiseconds = totalCentiseconds % 100;
                     this.timerText.setText(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${centiseconds.toString().padStart(2, '0')}`);
 
-                    // Handle keyboard jump
-                    if (Phaser.Input.Keyboard.JustDown(this.jumpKey)) {
-                        this.jump();
+                    if (this.jumpCooldown > 0) {
+                        this.jumpCooldown -= delta;
                     }
 
-                    // Reset jump count when touching ground
+                    if (Phaser.Input.Keyboard.JustDown(this.jumpKey) && this.canJump && this.jumpCooldown <= 0) {
+                        this.jump();
+                        this.jumpCooldown = 200;
+                    }
+
+                    if (this.jumpKey.isDown && this.jumpCount === 1 && !this.hero.body.touching.down) {
+                        const maxVelocity = -2000;
+                        this.hero.body.velocity.y = Math.max(this.hero.body.velocity.y - 20, maxVelocity);
+                        console.log('Jump hold - Velocity:', this.hero.body.velocity.y);
+                    }
+
                     if (this.hero.body.touching.down) {
                         this.jumpCount = 0;
-                        this.hero.setRotation(0);
+                        this.hero.body.setGravityY(2400);
+                        if (!this.tweens.isTweening(this.hero)) {
+                            this.hero.setRotation(0);
+                        }
+                        console.log('Hero grounded - Jump count reset');
                     }
 
-                    // Running bounce effect - visual only, more enthusiastic
                     if (this.hero.body.touching.down && this.jumpCount === 0) {
                         if (!this.heroBaseY) {
                             this.heroBaseY = this.hero.y;
                         }
-                        this.runBouncePhase += 0.25; // Faster bounce
-                        const bounce = Math.abs(Math.sin(this.runBouncePhase)) * 6; // Higher bounce, always positive
-                        this.hero.y = this.heroBaseY - bounce; // Subtract to bounce UP
+                        this.runBouncePhase += 0.5;
+                        const bounce = Math.abs(Math.sin(this.runBouncePhase)) * 10;
+                        this.hero.y = this.heroBaseY - bounce;
+                        const rotation = Math.sin(this.runBouncePhase) * 0.174533;
+                        this.hero.setRotation(rotation);
                     } else {
                         this.heroBaseY = 0;
                     }
 
-                    // Scroll floor
-                    this.floorTiles.forEach((tile, i) => {
+                    this.floorTiles.forEach((tile) => {
                         tile.tilePositionX += this.scrollSpeed * delta / 1000;
                     });
 
-                    // Boulder animation
                     this.boulder.rotation += 0.05;
                     this.boulderHat.x = this.boulder.x;
-                    this.boulderHat.y = this.boulder.y - 128 + Math.sin(time * 0.01) * 10;
+                    this.boulderHat.y = this.boulder.y - 192 + Math.sin(time * 0.01) * 10;
 
-                    // Spawn spikes
                     this.spikeSpawnTimer += delta;
                     if (this.spikeSpawnTimer >= this.spikeSpawnInterval) {
                         this.spawnSpike();
                         this.spikeSpawnTimer = 0;
                     }
 
-                    // Move spikes
                     this.spikes.children.entries.forEach(spike => {
                         spike.x -= this.scrollSpeed * delta / 1000;
                         if (spike.x < -100) {
@@ -324,7 +333,6 @@
                         }
                     });
 
-                    // Update flying spikes
                     this.flyingSpikes.children.entries.forEach(spike => {
                         spike.rotation += 0.3;
                         if (spike.x > 1100 || spike.x < -100 || spike.y > 1400 || spike.y < 200) {
@@ -332,18 +340,16 @@
                         }
                     });
 
-                    // Check boulder collision
-                    if (this.hero.x <= this.boulder.x + 100) {
+                    if (this.hero.x <= this.boulder.x + 150) {
                         this.gameOver();
                     }
                 }
 
                 if (this.gameState === 'dead') {
-                    // Boulder rampage
                     this.boulder.x += this.scrollSpeed * 2 * delta / 1000;
                     this.boulder.rotation += 0.1;
                     this.boulderHat.x = this.boulder.x;
-                    this.boulderHat.y = this.boulder.y - 128 + Math.sin(time * 0.01) * 10;
+                    this.boulderHat.y = this.boulder.y - 192 + Math.sin(time * 0.01) * 10;
 
                     if (this.boulder.x > 1100) {
                         this.restartButton.setVisible(true);
@@ -359,37 +365,33 @@
                 const height = Phaser.Utils.Array.GetRandom(heights);
                 const position = Phaser.Utils.Array.GetRandom(positions);
 
-                let spike;
                 const gameAreaUsableHeight = this.gameAreaHeight - 200;
+                const spikeHeight = gameAreaUsableHeight * height;
+                const scaleY = spikeHeight / this.spikeOriginalHeight;
+                const scaleX = scaleY;
 
+                let spike;
                 if (position === 'ground') {
-                    const spikeHeight = gameAreaUsableHeight * height;
                     spike = this.spikes.create(1100, this.floorY, 'spike');
-
-                    // Crop the sprite from top
-                    const cropHeight = (spikeHeight / this.spikeOriginalHeight) * this.spikeOriginalHeight;
-                    spike.setCrop(0, this.spikeOriginalHeight - cropHeight, this.spikeOriginalWidth, cropHeight);
                     spike.setOrigin(0.5, 1);
-
-                    // Set physics body
+                    spike.setPosition(1100, this.floorY);
+                    spike.setCrop(0, this.spikeOriginalHeight - spikeHeight, this.spikeOriginalWidth, spikeHeight);
                     spike.body.setSize(40, spikeHeight * 0.9);
-                    spike.body.setOffset(39, cropHeight * 0.1);
+                    spike.body.setOffset((this.spikeOriginalWidth - 40) / 2, -spikeHeight * 0.9);
                 } else {
-                    const spikeHeight = gameAreaUsableHeight * height;
                     spike = this.spikes.create(1100, this.ceilingY, 'spike');
-
-                    // Crop the sprite from bottom
-                    spike.setCrop(0, 0, this.spikeOriginalWidth, spikeHeight);
                     spike.setOrigin(0.5, 0);
+                    spike.setPosition(1100, this.ceilingY);
+                    spike.setCrop(0, 0, this.spikeOriginalWidth, spikeHeight);
                     spike.setFlipY(true);
-
-                    // Set physics body
                     spike.body.setSize(40, spikeHeight * 0.9);
-                    spike.body.setOffset(39, 0);
+                    spike.body.setOffset((this.spikeOriginalWidth - 40) / 2, 0);
                 }
 
                 spike.body.setAllowGravity(false);
                 spike.body.setImmovable(true);
+
+                console.log('Spawning', position, 'spike - Height:', spikeHeight, 'Y:', spike.y);
             }
 
             hitSpike(hero, spike) {
@@ -398,20 +400,14 @@
 
             boulderHitSpike(boulder, spike) {
                 const flyingSpike = this.flyingSpikes.create(spike.x, spike.y, 'spike');
-
-                // Copy the crop
-                if (spike.frame.cutWidth && spike.frame.cutHeight) {
-                    flyingSpike.setCrop(spike.frame.cutX, spike.frame.cutY, spike.frame.cutWidth, spike.frame.cutHeight);
-                }
+                flyingSpike.setScale(spike.scaleX, spike.scaleY);
                 flyingSpike.setFlipY(spike.flipY);
-
                 flyingSpike.body.setVelocity(
                     Phaser.Math.Between(300, 600),
                     Phaser.Math.Between(-600, -300)
                 );
                 flyingSpike.body.setAngularVelocity(Phaser.Math.Between(300, 600));
                 flyingSpike.body.setGravityY(800);
-
                 spike.destroy();
             }
 
@@ -433,7 +429,7 @@
                 default: 'arcade',
                 arcade: {
                     gravity: { y: 1200 },
-                    debug: false
+                    debug: true
                 }
             },
             scene: InfiniteRunner,
