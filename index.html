@@ -74,6 +74,7 @@
                 this.load.audio('jump2', 'assets/jump2.wav');
                 this.load.audio('jump3', 'assets/jump3.wav');
                 this.load.audio('boulder', 'assets/boulder.wav');
+                this.load.audio('bgmusic', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/INDICADO-r4JgJ5CqnJx9IQF9dTzj6oUEZwHFw1.mp3?JD9t');
 
                 this.load.on('loaderror', (file) => {
                     console.log('Failed to load:', file.src);
@@ -134,6 +135,9 @@
                 this.jumpSound2 = this.sound.add('jump2');
                 this.jumpSound3 = this.sound.add('jump3');
                 this.boulderSound = this.sound.add('boulder', { loop: true, volume: 0.5 });
+                this.backgroundMusic = this.sound.add('bgmusic', { loop: true, volume: 1 });
+
+                this.musicStarted = false;
 
                 this.timerText = this.add.text(500, 150, '00:00:00', {
                     fontSize: '128px',
@@ -191,12 +195,19 @@
                     this.slideTitleAway();
                 }
 
+                // Start background music on first play
+                if (!this.musicStarted) {
+                    this.backgroundMusic.play();
+                    this.musicStarted = true;
+                }
+
                 this.gameState = 'playing';
                 this.gameTime = 0;
                 this.jumpCount = 0;
                 this.canJump = false;
                 this.lastJumpTime = 0;
                 this.spikeSpawnTimer = 0;
+                this.deathTitleShown = false; // Reset death title flag for new game
                 this.time.delayedCall(100, () => { this.canJump = true; }, [], this);
 
                 this.playButton.setVisible(false);
@@ -274,7 +285,7 @@
                         this.boulderHat.x = -200;
                         this.boulderHat.y = this.boulder.y - 128;
 
-                        this.deathTitleShown = false;
+                        // Don't reset deathTitleShown here - keep it true to prevent infinite loop
                     }
                 });
             }
@@ -416,7 +427,7 @@
                     this.boulderHat.x = this.boulder.x;
                     this.boulderHat.y = this.boulder.y - 192 + Math.sin(time * 0.01) * 10;
 
-                    if (this.boulder.x > 1100 && !this.deathTitleShown && !this.titleSliding) {
+                    if (this.boulder.x > 1100 && !this.deathTitleShown && !this.titleSliding && this.gameState === 'dead') {
                         this.deathTitleShown = true;
                         this.slideTitleIn();
                     }
@@ -482,7 +493,7 @@
                 this.hero.body.setVelocity(0, 0);
                 this.hero.body.setAllowGravity(false);
                 this.hero.body.setImmovable(true);
-                this.deathTitleShown = false; // Reset flag for this death
+                // Don't reset deathTitleShown here - it should only be reset when starting a new game
             }
         }
 
