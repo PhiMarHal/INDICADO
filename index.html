@@ -419,24 +419,24 @@
                 const scaleY = spikeHeight / this.spikeOriginalHeight;
                 const scaleX = scaleY;
 
+                const spikeWidth = this.spikeOriginalWidth * scaleX;
+
                 let spike;
                 if (position === 'ground') {
                     spike = this.spikes.create(1100, this.floorY, 'spike');
                     spike.setOrigin(0.5, 1);
                     spike.setScale(scaleX, scaleY);
-                    spike.body.setSize(40, spikeHeight);
                 } else {
                     spike = this.spikes.create(1100, this.ceilingY + 125, 'spike');
                     spike.setOrigin(0.5, 0);
                     spike.setScale(scaleX, scaleY);
                     spike.setFlipY(true);
-                    spike.body.setSize(40, spikeHeight);
                 }
 
                 spike.body.setAllowGravity(false);
                 spike.body.setImmovable(true);
 
-                console.log('Spawning', position, 'spike - Height:', spikeHeight, 'Y:', spike.y);
+                console.log('Spawning', position, 'spike - Width:', spikeWidth, 'Height:', spikeHeight, 'Y:', spike.y);
             }
 
             hitSpike(hero, spike) {
