@@ -147,7 +147,7 @@
                 this.restartButton.setVisible(false);
                 this.restartButtonText.setVisible(false);
                 this.restartButton.setInteractive();
-                this.restartButton.on('pointerdown', () => this.restartGame());
+                this.restartButton.on('pointerdown', () => this.startGame());
 
                 this.jumpKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
                 this.input.on('pointerdown', () => {
@@ -165,17 +165,13 @@
                 // Set world bounds to active game area
                 this.physics.world.setBounds(0, this.gameAreaTop, 1000, this.gameAreaHeight);
 
-                // Title screen
+                // Title screen - starts visible, no auto-slide
                 this.titlePic = this.add.image(500, 800, 'titlepic');
                 this.titlePic.setDisplaySize(1200, 760);
                 this.titlePic.setDepth(1000);
 
-                // Auto-slide title after 4 seconds
-                this.titleTimer = this.time.delayedCall(4000, () => {
-                    this.slideTitleAway();
-                }, [], this);
-
                 this.titleSliding = false;
+                this.deathTitleShown = false;
             }
 
             startGame() {
@@ -191,59 +187,12 @@
 
                 this.playButton.setVisible(false);
                 this.playButtonText.setVisible(false);
+                this.restartButton.setVisible(false);
+                this.restartButtonText.setVisible(false);
 
                 this.boulder.setVisible(true);
                 this.boulder.x = 50;
                 this.boulderHat.setVisible(true);
-
-                this.hero.x = 250;
-                this.hero.y = this.floorY - 32;
-                this.hero.body.setVelocity(0, 0);
-                this.hero.body.setGravityY(2400);
-                this.hero.setRotation(0);
-
-                this.spikes.clear(true, true);
-                this.flyingSpikes.clear(true, true);
-
-                console.log('Game started - Hero position:', this.hero.x, this.hero.y);
-                console.log('Hero velocity:', this.hero.body.velocity.x, this.hero.body.velocity.y);
-                console.log('Hero gravity:', this.hero.body.gravity.y);
-            }
-
-            slideTitleAway() {
-                if (this.titleSliding) return;
-
-                this.titleSliding = true;
-                if (this.titleTimer) {
-                    this.titleTimer.remove();
-                }
-
-                this.tweens.add({
-                    targets: this.titlePic,
-                    x: -1000,
-                    duration: 800,
-                    ease: 'Power2',
-                    onComplete: () => {
-                        this.titlePic.setVisible(false);
-                        this.titleSliding = false;
-                    }
-                });
-            }
-
-            restartGame() {
-                this.gameState = 'menu';
-
-                this.restartButton.setVisible(false);
-                this.restartButtonText.setVisible(false);
-                this.playButton.setVisible(true);
-                this.playButtonText.setVisible(true);
-
-                this.boulder.setVisible(false);
-                this.boulder.x = -200;
-                this.boulder.y = this.floorY - 192;
-                this.boulderHat.setVisible(false);
-                this.boulderHat.x = -200;
-                this.boulderHat.y = this.boulder.y - 128;
 
                 this.hero.x = 250;
                 this.hero.y = this.floorY - 32;
@@ -258,14 +207,58 @@
                 this.spikes.clear(true, true);
                 this.flyingSpikes.clear(true, true);
 
-                this.gameTime = 0;
-                this.jumpCount = 0;
-                this.canJump = false;
-                this.time.delayedCall(100, () => { this.canJump = true; }, [], this);
-
-                console.log('Game restarted - Hero position:', this.hero.x, this.hero.y);
+                console.log('Game started - Hero position:', this.hero.x, this.hero.y);
                 console.log('Hero velocity:', this.hero.body.velocity.x, this.hero.body.velocity.y);
                 console.log('Hero gravity:', this.hero.body.gravity.y);
+            }
+
+            slideTitleAway() {
+                if (this.titleSliding) return;
+
+                this.titleSliding = true;
+
+                this.tweens.add({
+                    targets: this.titlePic,
+                    x: -1000,
+                    duration: 800,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        this.titlePic.setVisible(false);
+                        this.titleSliding = false;
+                    }
+                });
+            }
+
+            slideTitleIn() {
+                if (this.titleSliding) return;
+
+                this.titleSliding = true;
+                this.titlePic.x = 1500; // Start from right side
+                this.titlePic.setVisible(true);
+
+                this.tweens.add({
+                    targets: this.titlePic,
+                    x: 500,
+                    duration: 800,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        this.titleSliding = false;
+                        // Show Play button when titlepic slide is complete
+                        this.playButton.setVisible(true);
+                        this.playButtonText.setVisible(true);
+                        this.gameState = 'menu';
+
+                        // Reset boulder position to prevent re-triggering
+                        this.boulder.setVisible(false);
+                        this.boulder.x = -200;
+                        this.boulder.y = this.floorY - 192;
+                        this.boulderHat.setVisible(false);
+                        this.boulderHat.x = -200;
+                        this.boulderHat.y = this.boulder.y - 128;
+
+                        this.deathTitleShown = false;
+                    }
+                });
             }
 
             jump() {
@@ -400,9 +393,9 @@
                     this.boulderHat.x = this.boulder.x;
                     this.boulderHat.y = this.boulder.y - 192 + Math.sin(time * 0.01) * 10;
 
-                    if (this.boulder.x > 1100) {
-                        this.restartButton.setVisible(true);
-                        this.restartButtonText.setVisible(true);
+                    if (this.boulder.x > 1100 && !this.deathTitleShown && !this.titleSliding) {
+                        this.deathTitleShown = true;
+                        this.slideTitleIn();
                     }
                 }
             }
@@ -455,6 +448,7 @@
                 this.hero.body.setVelocity(0, 0);
                 this.hero.body.setAllowGravity(false);
                 this.hero.body.setImmovable(true);
+                this.deathTitleShown = false; // Reset flag for this death
             }
         }
 
