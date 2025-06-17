@@ -58,6 +58,9 @@
 
                 this.runBouncePhase = 0;
                 this.heroBaseY = 0;
+                this.hitPoints = 0;
+                this.maxHitPoints = 4;
+                this.lastDifficultyStep = -1; // Track when we last gave a hit point
             }
 
             preload() {
@@ -139,6 +142,16 @@
 
                 this.musicStarted = false;
 
+                // Create hit point sprites in the black void (bottom area)
+                this.hitPointSprites = [];
+                const startX = 320; // Center 4 sprites of 128px each with some spacing
+                for (let i = 0; i < this.maxHitPoints; i++) {
+                    const hitPoint = this.add.sprite(startX + (i * 128), 1450, 'hero');
+                    hitPoint.setDisplaySize(128, 128);
+                    hitPoint.setTint(0x555555); // Start greyed out
+                    this.hitPointSprites.push(hitPoint);
+                }
+
                 this.timerText = this.add.text(500, 150, '00:00:00', {
                     fontSize: '128px',
                     fill: '#FFFFFF',
@@ -207,8 +220,15 @@
                 this.canJump = false;
                 this.lastJumpTime = 0;
                 this.spikeSpawnTimer = 0;
+                this.hitPoints = 0;
+                this.lastDifficultyStep = -1;
                 this.deathTitleShown = false; // Reset death title flag for new game
                 this.time.delayedCall(100, () => { this.canJump = true; }, [], this);
+
+                // Reset hit point sprites
+                this.hitPointSprites.forEach(sprite => {
+                    sprite.setTint(0x555555); // Grey out all hit points
+                });
 
                 this.playButton.setVisible(false);
                 this.playButtonText.setVisible(false);
@@ -302,6 +322,23 @@
                 }
 
                 return currentInterval;
+            }
+
+            getDifficultySteps() {
+                const timeInSeconds = this.gameTime / 1000;
+                return Math.floor(timeInSeconds / 8);
+            }
+
+            updateHitPoints() {
+                const currentDifficultyStep = this.getDifficultySteps();
+
+                // Only give a hit point if we've reached a new difficulty step and haven't maxed out
+                if (currentDifficultyStep > this.lastDifficultyStep && this.hitPoints < this.maxHitPoints) {
+                    this.hitPointSprites[this.hitPoints].clearTint(); // Light up the next hit point
+                    this.hitPoints++;
+                    this.lastDifficultyStep = currentDifficultyStep;
+                    console.log('Gained hit point! Now have:', this.hitPoints, 'at difficulty step:', currentDifficultyStep);
+                }
             }
 
             jump() {
@@ -401,6 +438,9 @@
                         this.spikeSpawnTimer = 0;
                     }
 
+                    // Update hit points based on difficulty progression
+                    this.updateHitPoints();
+
                     this.spikes.children.entries.forEach(spike => {
                         spike.x -= scrollDelta;
                         if (spike.x < -100) {
@@ -471,7 +511,34 @@
             }
 
             hitSpike(hero, spike) {
-                this.gameOver();
+                if (this.hitPoints > 0) {
+                    // Player has hit points - use one up instead of dying
+                    this.hitPoints--;
+
+                    // Flash the lost hit point red then grey it out
+                    const lostHitPoint = this.hitPointSprites[this.hitPoints];
+                    lostHitPoint.setTint(0xff0000); // Red flash
+                    this.time.delayedCall(300, () => {
+                        lostHitPoint.setTint(0x555555); // Grey out after flash
+                    });
+
+                    // Make the spike fly away like boulder collision
+                    const flyingSpike = this.flyingSpikes.create(spike.x, spike.y, spike.texture.key);
+                    flyingSpike.setScale(0.5);
+                    flyingSpike.setFlipY(spike.flipY);
+                    flyingSpike.body.setVelocity(
+                        Phaser.Math.Between(300, 600),
+                        Phaser.Math.Between(-600, -300)
+                    );
+                    flyingSpike.body.setAngularVelocity(Phaser.Math.Between(300, 600));
+                    flyingSpike.body.setGravityY(800);
+                    spike.destroy();
+
+                    console.log('Hit point used! Remaining hit points:', this.hitPoints);
+                } else {
+                    // No hit points left - die normally
+                    this.gameOver();
+                }
             }
 
             boulderHitSpike(boulder, spike) {
