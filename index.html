@@ -60,7 +60,8 @@
                 this.heroBaseY = 0;
                 this.hitPoints = 0;
                 this.maxHitPoints = 4;
-                this.lastDifficultyStep = -1; // Track when we last gave a hit point
+                this.lastDifficultyStep = -1;
+                this.isInvulnerable = false; // Add invulnerability frames
             }
 
             preload() {
@@ -123,7 +124,7 @@
 
                 this.boulder = this.physics.add.sprite(-200, this.floorY - 192, 'rock');
                 this.boulder.setDisplaySize(384, 384);
-                this.boulder.body.setSize(832, 832); // this is applied to boulder.png dimensions, not setDisplaySize
+                this.boulder.body.setSize(832, 832);
                 this.boulder.setVisible(false);
 
                 this.boulderHat = this.add.sprite(-200, this.floorY - 320, 'hat');
@@ -133,7 +134,6 @@
                 this.spikes = this.physics.add.group();
                 this.flyingSpikes = this.physics.add.group();
 
-                // Create sound objects
                 this.jumpSound1 = this.sound.add('jump1');
                 this.jumpSound2 = this.sound.add('jump2');
                 this.jumpSound3 = this.sound.add('jump3');
@@ -144,7 +144,7 @@
 
                 // Create hit point sprites in the black void (bottom area)
                 this.hitPointSprites = [];
-                const startX = 320; // Center 4 sprites of 128px each with some spacing
+                const startX = 320;
                 for (let i = 0; i < this.maxHitPoints; i++) {
                     const hitPoint = this.add.sprite(startX + (i * 128), 1450, 'hero');
                     hitPoint.setDisplaySize(128, 128);
@@ -191,10 +191,8 @@
                 this.physics.add.overlap(this.hero, this.spikes, this.hitSpike, null, this);
                 this.physics.add.overlap(this.boulder, this.spikes, this.boulderHitSpike, null, this);
 
-                // Set world bounds to active game area
                 this.physics.world.setBounds(0, this.gameAreaTop, 1000, this.gameAreaHeight);
 
-                // Title screen - starts visible, no auto-slide
                 this.titlePic = this.add.image(500, 800, 'titlepic');
                 this.titlePic.setDisplaySize(1200, 760);
                 this.titlePic.setDepth(1000);
@@ -208,7 +206,6 @@
                     this.slideTitleAway();
                 }
 
-                // Start background music on first play
                 if (!this.musicStarted) {
                     this.backgroundMusic.play();
                     this.musicStarted = true;
@@ -222,7 +219,8 @@
                 this.spikeSpawnTimer = 0;
                 this.hitPoints = 0;
                 this.lastDifficultyStep = -1;
-                this.deathTitleShown = false; // Reset death title flag for new game
+                this.deathTitleShown = false;
+                this.isInvulnerable = false; // Reset invulnerability
                 this.time.delayedCall(100, () => { this.canJump = true; }, [], this);
 
                 // Reset hit point sprites
@@ -235,9 +233,17 @@
                 this.restartButton.setVisible(false);
                 this.restartButtonText.setVisible(false);
 
+                // Completely reset boulder state
                 this.boulder.setVisible(true);
                 this.boulder.x = 50;
+                this.boulder.y = this.floorY - 192;
+                this.boulder.body.setVelocity(0, 0); // Clear any accumulated velocity
+                this.boulder.body.setAngularVelocity(0); // Clear rotation velocity
+                this.boulder.setRotation(0); // Reset visual rotation
+
                 this.boulderHat.setVisible(true);
+                this.boulderHat.x = 50;
+                this.boulderHat.y = this.boulder.y - 128;
                 this.boulderSound.play();
 
                 this.hero.x = 250;
@@ -254,8 +260,6 @@
                 this.flyingSpikes.clear(true, true);
 
                 console.log('Game started - Hero position:', this.hero.x, this.hero.y);
-                console.log('Hero velocity:', this.hero.body.velocity.x, this.hero.body.velocity.y);
-                console.log('Hero gravity:', this.hero.body.gravity.y);
             }
 
             slideTitleAway() {
@@ -279,7 +283,7 @@
                 if (this.titleSliding) return;
 
                 this.titleSliding = true;
-                this.titlePic.x = 1500; // Start from right side
+                this.titlePic.x = 1500;
                 this.titlePic.setVisible(true);
 
                 this.tweens.add({
@@ -289,34 +293,27 @@
                     ease: 'Power2',
                     onComplete: () => {
                         this.titleSliding = false;
-                        // Show Play button when titlepic slide is complete
                         this.playButton.setVisible(true);
                         this.playButtonText.setVisible(true);
                         this.gameState = 'menu';
 
-                        // Stop boulder sound when returning to menu
                         this.boulderSound.stop();
 
-                        // Reset boulder position to prevent re-triggering
                         this.boulder.setVisible(false);
                         this.boulder.x = -200;
                         this.boulder.y = this.floorY - 192;
                         this.boulderHat.setVisible(false);
                         this.boulderHat.x = -200;
                         this.boulderHat.y = this.boulder.y - 128;
-
-                        // Don't reset deathTitleShown here - keep it true to prevent infinite loop
                     }
                 });
             }
 
             getCurrentSpikeInterval() {
-                // Progressive difficulty: reduce spawn interval by 10% every 8 seconds
                 const timeInSeconds = this.gameTime / 1000;
                 const difficultySteps = Math.floor(timeInSeconds / 8);
                 let currentInterval = this.baseSpikeSpawnInterval;
 
-                // Apply 10% reduction for each difficulty step
                 for (let i = 0; i < difficultySteps; i++) {
                     currentInterval *= 0.9;
                 }
@@ -332,13 +329,24 @@
             updateHitPoints() {
                 const currentDifficultyStep = this.getDifficultySteps();
 
-                // Only give a hit point if we've reached a new difficulty step and haven't maxed out
+                // Give a hit point for each new difficulty step reached
                 if (currentDifficultyStep > this.lastDifficultyStep && this.hitPoints < this.maxHitPoints) {
-                    this.hitPointSprites[this.hitPoints].clearTint(); // Light up the next hit point
+                    // Light up the next hit point sprite
+                    this.hitPointSprites[this.hitPoints].clearTint();
                     this.hitPoints++;
                     this.lastDifficultyStep = currentDifficultyStep;
                     console.log('Gained hit point! Now have:', this.hitPoints, 'at difficulty step:', currentDifficultyStep);
                 }
+            }
+
+            flashPlayer() {
+                // Flash the player red for damage indication
+                this.hero.setTint(0xff0000);
+                this.time.delayedCall(200, () => {
+                    if (this.gameState === 'playing') { // Only clear tint if still playing
+                        this.hero.clearTint();
+                    }
+                });
             }
 
             jump() {
@@ -347,20 +355,17 @@
                     this.jumpCount++;
                     this.lastJumpTime = this.time.now;
 
-                    // Stop any currently playing jump sounds before playing new one
                     this.jumpSound1.stop();
                     this.jumpSound2.stop();
                     this.jumpSound3.stop();
 
                     if (isFirstJump) {
-                        // First jump - normal jump
                         this.hero.body.setVelocityY(-2000);
                         this.hero.body.setGravityY(2400);
                         this.hero.setRotation(0);
                         this.jumpSound1.play();
                         console.log('First jump initiated - Velocity:', this.hero.body.velocity.y);
                     } else {
-                        // All subsequent jumps - double jump with flip
                         this.hero.body.setVelocityY(-1200);
                         this.hero.body.setGravityY(1600);
                         this.tweens.killTweensOf(this.hero);
@@ -373,7 +378,7 @@
                             ease: 'Power2'
                         });
                     }
-                    this.jumpCooldown = 200; // 200ms cooldown between jumps
+                    this.jumpCooldown = 200;
                 }
             }
 
@@ -438,7 +443,6 @@
                         this.spikeSpawnTimer = 0;
                     }
 
-                    // Update hit points based on difficulty progression
                     this.updateHitPoints();
 
                     this.spikes.children.entries.forEach(spike => {
@@ -475,7 +479,7 @@
             }
 
             spawnSpike() {
-                const spikeTypes = ['spike3', 'spike2', 'spike1']; // short, medium, tall
+                const spikeTypes = ['spike3', 'spike2', 'spike1'];
                 const positions = ['ground', 'ceiling'];
 
                 const spikeType = Phaser.Utils.Array.GetRandom(spikeTypes);
@@ -500,20 +504,24 @@
             }
 
             heroHitPlatform(hero, platform) {
-                // Check if hero hit the ceiling (platform y position indicates ceiling)
                 if (platform.y < this.floorY) {
-                    // Hero hit ceiling - slam down instantly
-                    this.hero.body.setVelocityY(3000); // Very fast downward velocity
-                    this.hero.body.setGravityY(4800); // Double gravity for sharp drop
-                    this.jumpCount = 0; // Reset jump count since we're being slammed down
+                    this.hero.body.setVelocityY(3000);
+                    this.hero.body.setGravityY(4800);
+                    this.jumpCount = 0;
                     console.log('Hero hit ceiling - slamming down!');
                 }
             }
 
             hitSpike(hero, spike) {
+                // Prevent multiple hits with invulnerability frames
+                if (this.isInvulnerable) return;
+
                 if (this.hitPoints > 0) {
                     // Player has hit points - use one up instead of dying
                     this.hitPoints--;
+
+                    // Flash the player red
+                    this.flashPlayer();
 
                     // Flash the lost hit point red then grey it out
                     const lostHitPoint = this.hitPointSprites[this.hitPoints];
@@ -522,7 +530,13 @@
                         lostHitPoint.setTint(0x555555); // Grey out after flash
                     });
 
-                    // Make the spike fly away like boulder collision
+                    // Set invulnerability frames to prevent multiple hits
+                    this.isInvulnerable = true;
+                    this.time.delayedCall(500, () => {
+                        this.isInvulnerable = false;
+                    });
+
+                    // Make the spike fly away
                     const flyingSpike = this.flyingSpikes.create(spike.x, spike.y, spike.texture.key);
                     flyingSpike.setScale(0.5);
                     flyingSpike.setFlipY(spike.flipY);
@@ -560,7 +574,7 @@
                 this.hero.body.setVelocity(0, 0);
                 this.hero.body.setAllowGravity(false);
                 this.hero.body.setImmovable(true);
-                // Don't reset deathTitleShown here - it should only be reset when starting a new game
+                this.isInvulnerable = false; // Reset invulnerability on death
             }
         }
 
