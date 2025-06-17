@@ -61,7 +61,11 @@
                 this.hitPoints = 0;
                 this.maxHitPoints = 4;
                 this.lastDifficultyStep = -1;
-                this.isInvulnerable = false; // Add invulnerability frames
+                this.isInvulnerable = false;
+
+                // Hit point bouncing system
+                this.hitPointBaseY = 1450;
+                this.hitPointTweens = [];
             }
 
             preload() {
@@ -160,10 +164,11 @@
                 this.hitPointSprites = [];
                 const startX = 320;
                 for (let i = 0; i < this.maxHitPoints; i++) {
-                    const hitPoint = this.add.sprite(startX + (i * 128), 1450, 'hero');
+                    const hitPoint = this.add.sprite(startX + (i * 128), this.hitPointBaseY, 'hero');
                     hitPoint.setDisplaySize(128, 128);
                     hitPoint.setTint(0x555555); // Start greyed out
                     this.hitPointSprites.push(hitPoint);
+                    this.hitPointTweens.push(null); // Track tween for each hit point
                 }
 
                 this.timerText = this.add.text(500, 150, '00:00:00', {
@@ -215,6 +220,55 @@
                 this.deathTitleShown = false;
             }
 
+            startHitPointBounce(index) {
+                // Stop any existing tween for this hit point
+                if (this.hitPointTweens[index]) {
+                    this.hitPointTweens[index].destroy();
+                }
+
+                // Calculate bounce speed based on current hit points (1x, 2x, 4x, 8x speed)
+                const baseDuration = 3636; // ~align with song bpm (132)
+                const speedMultiplier = Math.pow(2, this.hitPoints - 1); // f(x) = 2^(x-1)
+                const duration = baseDuration / speedMultiplier;
+
+                // Start immediately, synchronized - bounce up and down around center
+                this.hitPointTweens[index] = this.tweens.add({
+                    targets: this.hitPointSprites[index],
+                    y: this.hitPointBaseY + 20, // Bounce down 20 pixels from center
+                    duration: duration / 2,
+                    ease: 'Sine.easeInOut',
+                    yoyo: true,
+                    repeat: -1, // Infinite loop
+                    onStart: () => {
+                        // Set starting position to bounce up first
+                        this.hitPointSprites[index].y = this.hitPointBaseY - 20;
+                    }
+                });
+            }
+
+            stopHitPointBounce(index) {
+                // Stop bouncing and recenter
+                if (this.hitPointTweens[index]) {
+                    this.hitPointTweens[index].destroy();
+                    this.hitPointTweens[index] = null;
+                }
+
+                // Smoothly return to center position
+                this.tweens.add({
+                    targets: this.hitPointSprites[index],
+                    y: this.hitPointBaseY,
+                    duration: 200,
+                    ease: 'Power2'
+                });
+            }
+
+            updateAllHitPointSpeeds() {
+                // Update bounce speed for all hit points (both existing and new)
+                for (let i = 0; i < this.hitPoints; i++) {
+                    this.startHitPointBounce(i);
+                }
+            }
+
             startGame() {
                 if (this.titlePic && this.titlePic.visible && !this.titleSliding) {
                     this.slideTitleAway();
@@ -234,12 +288,13 @@
                 this.hitPoints = 0;
                 this.lastDifficultyStep = -1;
                 this.deathTitleShown = false;
-                this.isInvulnerable = false; // Reset invulnerability
+                this.isInvulnerable = false;
                 this.time.delayedCall(100, () => { this.canJump = true; }, [], this);
 
-                // Reset hit point sprites
-                this.hitPointSprites.forEach(sprite => {
+                // Reset hit point sprites and stop all bouncing
+                this.hitPointSprites.forEach((sprite, index) => {
                     sprite.setTint(0x555555); // Grey out all hit points
+                    this.stopHitPointBounce(index);
                 });
 
                 this.playButton.setVisible(false);
@@ -368,7 +423,10 @@
                     // Only award hit point if not at max
                     if (this.hitPoints < this.maxHitPoints) {
                         this.hitPointSprites[this.hitPoints].clearTint();
-                        this.hitPoints++;
+                        this.hitPoints++; // Increment FIRST
+
+                        // Update speeds for all existing bouncing hit points, then start the new one
+                        this.updateAllHitPointSpeeds();
                         console.log('Gained hit point! Now have:', this.hitPoints, 'at difficulty step:', currentDifficultyStep);
                     }
 
@@ -568,6 +626,12 @@
                         lostHitPoint.setTint(0x555555); // Grey out after flash
                     });
 
+                    // Stop bouncing for the lost hit point
+                    this.stopHitPointBounce(this.hitPoints);
+
+                    // Update bounce speeds for remaining hit points
+                    this.updateAllHitPointSpeeds();
+
                     // Set invulnerability frames to prevent multiple hits
                     this.isInvulnerable = true;
                     this.time.delayedCall(500, () => {
@@ -612,7 +676,7 @@
                 this.hero.body.setVelocity(0, 0);
                 this.hero.body.setAllowGravity(false);
                 this.hero.body.setImmovable(true);
-                this.isInvulnerable = false; // Reset invulnerability on death
+                this.isInvulnerable = false;
             }
         }
 
