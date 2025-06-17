@@ -41,10 +41,10 @@
                 this.gameState = 'menu';
                 this.scrollSpeed = 800;
                 this.jumpCount = 0;
-                this.maxJumps = 3;
+                this.maxJumps = Infinity;
                 this.gameTime = 0;
                 this.spikeSpawnTimer = 0;
-                this.spikeSpawnInterval = 2000;
+                this.baseSpikeSpawnInterval = 500;
                 this.canJump = false;
                 this.jumpCooldown = 0;
                 this.jumpHoldTime = 0;
@@ -69,6 +69,11 @@
                 this.load.image('spike3', 'assets/spike3.png');
                 this.load.image('floor', 'assets/floor.png');
                 this.load.image('titlepic', 'assets/titlepic.png');
+
+                this.load.audio('jump1', 'assets/jump1.wav');
+                this.load.audio('jump2', 'assets/jump2.wav');
+                this.load.audio('jump3', 'assets/jump3.wav');
+                this.load.audio('boulder', 'assets/boulder.wav');
 
                 this.load.on('loaderror', (file) => {
                     console.log('Failed to load:', file.src);
@@ -123,6 +128,12 @@
 
                 this.spikes = this.physics.add.group();
                 this.flyingSpikes = this.physics.add.group();
+
+                // Create sound objects
+                this.jumpSound1 = this.sound.add('jump1');
+                this.jumpSound2 = this.sound.add('jump2');
+                this.jumpSound3 = this.sound.add('jump3');
+                this.boulderSound = this.sound.add('boulder', { loop: true, volume: 0.5 });
 
                 this.timerText = this.add.text(500, 150, '00:00:00', {
                     fontSize: '128px',
@@ -185,6 +196,7 @@
                 this.jumpCount = 0;
                 this.canJump = false;
                 this.lastJumpTime = 0;
+                this.spikeSpawnTimer = 0;
                 this.time.delayedCall(100, () => { this.canJump = true; }, [], this);
 
                 this.playButton.setVisible(false);
@@ -195,6 +207,7 @@
                 this.boulder.setVisible(true);
                 this.boulder.x = 50;
                 this.boulderHat.setVisible(true);
+                this.boulderSound.play();
 
                 this.hero.x = 250;
                 this.hero.y = this.floorY - 32;
@@ -250,6 +263,9 @@
                         this.playButtonText.setVisible(true);
                         this.gameState = 'menu';
 
+                        // Stop boulder sound when returning to menu
+                        this.boulderSound.stop();
+
                         // Reset boulder position to prevent re-triggering
                         this.boulder.setVisible(false);
                         this.boulder.x = -200;
@@ -263,47 +279,50 @@
                 });
             }
 
+            getCurrentSpikeInterval() {
+                // Progressive difficulty: reduce spawn interval by 10% every 8 seconds
+                const timeInSeconds = this.gameTime / 1000;
+                const difficultySteps = Math.floor(timeInSeconds / 8);
+                let currentInterval = this.baseSpikeSpawnInterval;
+
+                // Apply 10% reduction for each difficulty step
+                for (let i = 0; i < difficultySteps; i++) {
+                    currentInterval *= 0.9;
+                }
+
+                return currentInterval;
+            }
+
             jump() {
-                if (this.jumpCount < this.maxJumps && this.jumpCooldown <= 0) {
-                    const previousJumpCount = this.jumpCount;
+                if (this.jumpCooldown <= 0) {
+                    const isFirstJump = this.jumpCount === 0;
                     this.jumpCount++;
                     this.lastJumpTime = this.time.now;
 
-                    if (this.jumpCount === 1 && previousJumpCount === 0) {
+                    // Stop any currently playing jump sounds before playing new one
+                    this.jumpSound1.stop();
+                    this.jumpSound2.stop();
+                    this.jumpSound3.stop();
+
+                    if (isFirstJump) {
+                        // First jump - normal jump
                         this.hero.body.setVelocityY(-1600);
                         this.hero.body.setGravityY(2400);
                         this.hero.setRotation(0);
+                        this.jumpSound1.play();
                         console.log('First jump initiated - Velocity:', this.hero.body.velocity.y);
-                    } else if (this.jumpCount === 2 && previousJumpCount === 1) {
+                    } else {
+                        // All subsequent jumps - double jump with flip
                         this.hero.body.setVelocityY(-1200);
-                        this.hero.body.setGravityY(1500);
+                        this.hero.body.setGravityY(1600);
                         this.tweens.killTweensOf(this.hero);
                         this.hero.setRotation(0);
+                        this.jumpSound2.play();
                         this.tweens.add({
                             targets: this.hero,
                             rotation: Math.PI * 2,
                             duration: 300,
                             ease: 'Power2'
-                        });
-                    } else if (this.jumpCount === 3 && previousJumpCount === 2) {
-                        this.hero.body.setVelocityY(-500);
-                        this.hero.body.setGravityY(800);
-                        this.hero.setRotation(0);
-                        this.tweens.add({
-                            targets: this.hero,
-                            x: this.hero.x - 20,
-                            duration: 80,
-                            yoyo: true,
-                            repeat: 5,
-                            ease: 'Sine.inOut'
-                        });
-                        this.tweens.add({
-                            targets: this.hero,
-                            y: this.hero.y - 5,
-                            duration: 60,
-                            yoyo: true,
-                            repeat: 7,
-                            ease: 'Sine.inOut'
                         });
                     }
                     this.jumpCooldown = 200; // 200ms cooldown between jumps
@@ -365,7 +384,8 @@
                     this.boulderHat.y = this.boulder.y - 192 + Math.sin(time * 0.01) * 10;
 
                     this.spikeSpawnTimer += delta;
-                    if (this.spikeSpawnTimer >= this.spikeSpawnInterval) {
+                    const currentSpikeInterval = this.getCurrentSpikeInterval();
+                    if (this.spikeSpawnTimer >= currentSpikeInterval) {
                         this.spawnSpike();
                         this.spikeSpawnTimer = 0;
                     }
@@ -425,7 +445,7 @@
                 spike.body.setAllowGravity(false);
                 spike.body.setImmovable(true);
 
-                console.log('Spawning', position, spikeType, '- Y:', spike.y);
+                console.log('Spawning', position, spikeType, '- Y:', spike.y, '- Current interval:', this.getCurrentSpikeInterval());
             }
 
             hitSpike(hero, spike) {
