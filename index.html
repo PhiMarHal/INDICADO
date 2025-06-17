@@ -113,24 +113,25 @@
 
                 this.boulder = this.physics.add.sprite(-200, this.floorY - 192, 'rock');
                 this.boulder.setDisplaySize(384, 384);
+                this.boulder.body.setSize(832, 832); // this is applied to boulder.png dimensions, not setDisplaySize
                 this.boulder.setVisible(false);
 
                 this.boulderHat = this.add.sprite(-200, this.floorY - 320, 'hat');
-                this.boulderHat.setDisplaySize(128, 128);
+                this.boulderHat.setDisplaySize(256, 256);
                 this.boulderHat.setVisible(false);
 
                 this.spikes = this.physics.add.group();
                 this.flyingSpikes = this.physics.add.group();
 
                 this.timerText = this.add.text(500, 150, '00:00:00', {
-                    fontSize: '48px',
+                    fontSize: '128px',
                     fill: '#FFFFFF',
                     fontFamily: 'monospace'
                 }).setOrigin(0.5);
 
                 this.playButton = this.add.rectangle(500, 1450, 400, 120, 0x4CAF50);
                 this.playButtonText = this.add.text(500, 1450, 'PLAY', {
-                    fontSize: '48px',
+                    fontSize: '64px',
                     fill: '#FFFFFF'
                 }).setOrigin(0.5);
 
@@ -139,7 +140,7 @@
 
                 this.restartButton = this.add.rectangle(500, 1450, 400, 120, 0xFF5722);
                 this.restartButtonText = this.add.text(500, 1450, 'RESTART', {
-                    fontSize: '48px',
+                    fontSize: '64px',
                     fill: '#FFFFFF'
                 }).setOrigin(0.5);
 
@@ -363,7 +364,7 @@
                         tile.tilePositionX += scrollDelta * 2;
                     });
 
-                    this.boulder.rotation += 0.05;
+                    this.boulder.rotation += 0.08;
                     this.boulderHat.x = this.boulder.x;
                     this.boulderHat.y = this.boulder.y - 192 + Math.sin(time * 0.01) * 10;
 
