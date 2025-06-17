@@ -48,6 +48,7 @@
                 this.canJump = false;
                 this.jumpCooldown = 0;
                 this.jumpHoldTime = 0;
+                this.lastJumpTime = 0;
 
                 this.gameAreaTop = 300;
                 this.gameAreaBottom = 1300;
@@ -183,6 +184,7 @@
                 this.gameTime = 0;
                 this.jumpCount = 0;
                 this.canJump = false;
+                this.lastJumpTime = 0;
                 this.time.delayedCall(100, () => { this.canJump = true; }, [], this);
 
                 this.playButton.setVisible(false);
@@ -265,6 +267,7 @@
                 if (this.jumpCount < this.maxJumps && this.jumpCooldown <= 0) {
                     const previousJumpCount = this.jumpCount;
                     this.jumpCount++;
+                    this.lastJumpTime = this.time.now;
 
                     if (this.jumpCount === 1 && previousJumpCount === 0) {
                         this.hero.body.setVelocityY(-1600);
@@ -325,7 +328,7 @@
                         this.jumpCooldown = 200;
                     }
 
-                    if (this.hero.body.touching.down) {
+                    if (this.hero.body.touching.down && this.time.now - this.lastJumpTime > 100) {
                         this.jumpCount = 0;
                         this.hero.body.setGravityY(2400);
                         if (!this.tweens.isTweening(this.hero)) {
