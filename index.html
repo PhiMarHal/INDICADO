@@ -57,16 +57,15 @@
 
                 this.runBouncePhase = 0;
                 this.heroBaseY = 0;
-
-                this.spikeOriginalWidth = 118;
-                this.spikeOriginalHeight = 946;
             }
 
             preload() {
                 this.load.image('hero', 'assets/hero.png');
                 this.load.image('rock', 'assets/rock.png');
                 this.load.image('hat', 'assets/hat.png');
-                this.load.image('spike', 'assets/spike.png');
+                this.load.image('spike1', 'assets/spike1.png');
+                this.load.image('spike2', 'assets/spike2.png');
+                this.load.image('spike3', 'assets/spike3.png');
                 this.load.image('floor', 'assets/floor.png');
                 this.load.image('titlepic', 'assets/titlepic.png');
 
@@ -408,35 +407,28 @@
             }
 
             spawnSpike() {
-                const heights = [0.2, 0.4, 0.6];
+                const spikeTypes = ['spike3', 'spike2', 'spike1']; // short, medium, tall
                 const positions = ['ground', 'ceiling'];
 
-                const height = Phaser.Utils.Array.GetRandom(heights);
+                const spikeType = Phaser.Utils.Array.GetRandom(spikeTypes);
                 const position = Phaser.Utils.Array.GetRandom(positions);
-
-                const gameAreaUsableHeight = this.gameAreaHeight - 200;
-                const spikeHeight = gameAreaUsableHeight * height;
-                const scaleY = spikeHeight / this.spikeOriginalHeight;
-                const scaleX = scaleY;
-
-                const spikeWidth = this.spikeOriginalWidth * scaleX;
 
                 let spike;
                 if (position === 'ground') {
-                    spike = this.spikes.create(1100, this.floorY, 'spike');
+                    spike = this.spikes.create(1100, this.floorY, spikeType);
                     spike.setOrigin(0.5, 1);
-                    spike.setScale(scaleX, scaleY);
+                    spike.setScale(0.5);
                 } else {
-                    spike = this.spikes.create(1100, this.ceilingY + 125, 'spike');
+                    spike = this.spikes.create(1100, this.ceilingY + 125, spikeType);
                     spike.setOrigin(0.5, 0);
-                    spike.setScale(scaleX, scaleY);
+                    spike.setScale(0.5);
                     spike.setFlipY(true);
                 }
 
                 spike.body.setAllowGravity(false);
                 spike.body.setImmovable(true);
 
-                console.log('Spawning', position, 'spike - Width:', spikeWidth, 'Height:', spikeHeight, 'Y:', spike.y);
+                console.log('Spawning', position, spikeType, '- Y:', spike.y);
             }
 
             hitSpike(hero, spike) {
@@ -444,8 +436,8 @@
             }
 
             boulderHitSpike(boulder, spike) {
-                const flyingSpike = this.flyingSpikes.create(spike.x, spike.y, 'spike');
-                flyingSpike.setScale(spike.scaleX, spike.scaleY);
+                const flyingSpike = this.flyingSpikes.create(spike.x, spike.y, spike.texture.key);
+                flyingSpike.setScale(0.5);
                 flyingSpike.setFlipY(spike.flipY);
                 flyingSpike.body.setVelocity(
                     Phaser.Math.Between(300, 600),
