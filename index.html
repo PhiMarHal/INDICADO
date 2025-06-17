@@ -68,6 +68,7 @@
                 this.load.image('hat', 'assets/hat.png');
                 this.load.image('spike', 'assets/spike.png');
                 this.load.image('floor', 'assets/floor.png');
+                this.load.image('titlepic', 'assets/titlepic.png');
 
                 this.load.on('loaderror', (file) => {
                     console.log('Failed to load:', file.src);
@@ -122,24 +123,24 @@
                 this.spikes = this.physics.add.group();
                 this.flyingSpikes = this.physics.add.group();
 
-                this.timerText = this.add.text(850, 50, '00:00:00', {
-                    fontSize: '24px',
+                this.timerText = this.add.text(500, 150, '00:00:00', {
+                    fontSize: '48px',
                     fill: '#FFFFFF',
                     fontFamily: 'monospace'
-                });
+                }).setOrigin(0.5);
 
-                this.playButton = this.add.rectangle(500, 800, 200, 80, 0x4CAF50);
-                this.playButtonText = this.add.text(500, 800, 'PLAY', {
-                    fontSize: '32px',
+                this.playButton = this.add.rectangle(500, 1450, 400, 120, 0x4CAF50);
+                this.playButtonText = this.add.text(500, 1450, 'PLAY', {
+                    fontSize: '48px',
                     fill: '#FFFFFF'
                 }).setOrigin(0.5);
 
                 this.playButton.setInteractive();
                 this.playButton.on('pointerdown', () => this.startGame());
 
-                this.restartButton = this.add.rectangle(500, 850, 200, 80, 0xFF5722);
-                this.restartButtonText = this.add.text(500, 850, 'RESTART', {
-                    fontSize: '28px',
+                this.restartButton = this.add.rectangle(500, 1450, 400, 120, 0xFF5722);
+                this.restartButtonText = this.add.text(500, 1450, 'RESTART', {
+                    fontSize: '48px',
                     fill: '#FFFFFF'
                 }).setOrigin(0.5);
 
@@ -163,9 +164,25 @@
 
                 // Set world bounds to active game area
                 this.physics.world.setBounds(0, this.gameAreaTop, 1000, this.gameAreaHeight);
+
+                // Title screen
+                this.titlePic = this.add.image(500, 800, 'titlepic');
+                this.titlePic.setDisplaySize(1200, 760);
+                this.titlePic.setDepth(1000);
+
+                // Auto-slide title after 4 seconds
+                this.titleTimer = this.time.delayedCall(4000, () => {
+                    this.slideTitleAway();
+                }, [], this);
+
+                this.titleSliding = false;
             }
 
             startGame() {
+                if (this.titlePic && this.titlePic.visible && !this.titleSliding) {
+                    this.slideTitleAway();
+                }
+
                 this.gameState = 'playing';
                 this.gameTime = 0;
                 this.jumpCount = 0;
@@ -191,6 +208,26 @@
                 console.log('Game started - Hero position:', this.hero.x, this.hero.y);
                 console.log('Hero velocity:', this.hero.body.velocity.x, this.hero.body.velocity.y);
                 console.log('Hero gravity:', this.hero.body.gravity.y);
+            }
+
+            slideTitleAway() {
+                if (this.titleSliding) return;
+
+                this.titleSliding = true;
+                if (this.titleTimer) {
+                    this.titleTimer.remove();
+                }
+
+                this.tweens.add({
+                    targets: this.titlePic,
+                    x: -1000,
+                    duration: 800,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        this.titlePic.setVisible(false);
+                        this.titleSliding = false;
+                    }
+                });
             }
 
             restartGame() {
