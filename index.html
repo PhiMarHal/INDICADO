@@ -44,7 +44,7 @@
                 this.maxJumps = Infinity;
                 this.gameTime = 0;
                 this.spikeSpawnTimer = 0;
-                this.baseSpikeSpawnInterval = 500;
+                this.baseSpikeSpawnInterval = 1000;
                 this.canJump = false;
                 this.jumpCooldown = 0;
                 this.jumpHoldTime = 0;
@@ -169,7 +169,7 @@
                     }
                 });
 
-                this.physics.add.collider(this.hero, this.platforms);
+                this.physics.add.collider(this.hero, this.platforms, this.heroHitPlatform, null, this);
                 this.physics.add.collider(this.boulder, this.platforms);
                 this.physics.add.overlap(this.hero, this.spikes, this.hitSpike, null, this);
                 this.physics.add.overlap(this.boulder, this.spikes, this.boulderHitSpike, null, this);
@@ -306,7 +306,7 @@
 
                     if (isFirstJump) {
                         // First jump - normal jump
-                        this.hero.body.setVelocityY(-1600);
+                        this.hero.body.setVelocityY(-2000);
                         this.hero.body.setGravityY(2400);
                         this.hero.setRotation(0);
                         this.jumpSound1.play();
@@ -446,6 +446,17 @@
                 spike.body.setImmovable(true);
 
                 console.log('Spawning', position, spikeType, '- Y:', spike.y, '- Current interval:', this.getCurrentSpikeInterval());
+            }
+
+            heroHitPlatform(hero, platform) {
+                // Check if hero hit the ceiling (platform y position indicates ceiling)
+                if (platform.y < this.floorY) {
+                    // Hero hit ceiling - slam down instantly
+                    this.hero.body.setVelocityY(3000); // Very fast downward velocity
+                    this.hero.body.setGravityY(4800); // Double gravity for sharp drop
+                    this.jumpCount = 0; // Reset jump count since we're being slammed down
+                    console.log('Hero hit ceiling - slamming down!');
+                }
             }
 
             hitSpike(hero, spike) {
