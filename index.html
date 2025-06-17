@@ -87,8 +87,20 @@
 
             create() {
                 this.add.rectangle(500, 150, 1000, 300, 0x000000);
-                this.add.rectangle(500, 800, 1000, 1000, 0x87CEEB);
+                this.gameArea = this.add.rectangle(500, 800, 1000, 1000, 0x87CEEB);
                 this.add.rectangle(500, 1450, 1000, 300, 0x000000);
+
+                // Color progression for difficulty steps - lighter tones
+                this.areaColors = [
+                    0x87CEEB, // Light blue (default)
+                    0xADD8E6, // Light blue
+                    0xDDA0DD, // Plum  
+                    0xFFB6C1, // Light pink
+                    0xFFA07A, // Light salmon
+                    0xFFE4B5, // Moccasin
+                    0xF0E68C, // Khaki
+                    0x98FB98  // Pale green
+                ];
 
                 this.floorTiles = [];
                 for (let i = 0; i < 3; i++) {
@@ -259,6 +271,9 @@
                 this.spikes.clear(true, true);
                 this.flyingSpikes.clear(true, true);
 
+                // Reset game area color to default
+                this.gameArea.setFillStyle(this.areaColors[0]);
+
                 console.log('Game started - Hero position:', this.hero.x, this.hero.y);
             }
 
@@ -329,13 +344,33 @@
             updateHitPoints() {
                 const currentDifficultyStep = this.getDifficultySteps();
 
-                // Give a hit point for each new difficulty step reached
-                if (currentDifficultyStep > this.lastDifficultyStep && this.hitPoints < this.maxHitPoints) {
-                    // Light up the next hit point sprite
-                    this.hitPointSprites[this.hitPoints].clearTint();
-                    this.hitPoints++;
+                // Check if we've reached a new difficulty step
+                if (currentDifficultyStep > this.lastDifficultyStep) {
+                    // Always update difficulty tracking
                     this.lastDifficultyStep = currentDifficultyStep;
-                    console.log('Gained hit point! Now have:', this.hitPoints, 'at difficulty step:', currentDifficultyStep);
+
+                    // Always change game area color and pulse timer
+                    const colorIndex = currentDifficultyStep % this.areaColors.length;
+                    this.gameArea.setFillStyle(this.areaColors[colorIndex]);
+
+                    // Pulse the timer
+                    this.tweens.add({
+                        targets: this.timerText,
+                        scaleX: 1.4,
+                        scaleY: 1.4,
+                        duration: 150,
+                        ease: 'Power2',
+                        yoyo: true
+                    });
+
+                    // Only award hit point if not at max
+                    if (this.hitPoints < this.maxHitPoints) {
+                        this.hitPointSprites[this.hitPoints].clearTint();
+                        this.hitPoints++;
+                        console.log('Gained hit point! Now have:', this.hitPoints, 'at difficulty step:', currentDifficultyStep);
+                    }
+
+                    console.log('Difficulty step increased to:', currentDifficultyStep);
                 }
             }
 
