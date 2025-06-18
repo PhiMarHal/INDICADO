@@ -83,7 +83,7 @@
                 this.load.audio('jump3', 'assets/jump3.wav');
                 this.load.audio('ceiling', 'assets/ceiling.wav');
                 this.load.audio('boulder', 'assets/boulder.wav');
-                this.load.audio('bgmusic', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/INDICADO-r4JgJ5CqnJx9IQF9dTzj6oUEZwHFw1.mp3?JD9t');
+
 
                 this.load.on('loaderror', (file) => {
                     console.log('Failed to load:', file.src);
@@ -156,7 +156,6 @@
                 this.jumpSound3 = this.sound.add('jump3');
                 this.ceilingSound = this.sound.add('ceiling');
                 this.boulderSound = this.sound.add('boulder', { loop: true, volume: 0.5 });
-                this.backgroundMusic = this.sound.add('bgmusic', { loop: true, volume: 1 });
 
                 this.musicStarted = false;
 
@@ -177,25 +176,39 @@
                     fontFamily: 'monospace'
                 }).setOrigin(0.5);
 
-                this.playButton = this.add.rectangle(500, 1450, 400, 120, 0x4CAF50);
-                this.playButtonText = this.add.text(500, 1450, 'PLAY', {
-                    fontSize: '64px',
-                    fill: '#FFFFFF'
+                this.playButton = this.add.rectangle(500, 1450, 700, 200, 0x000000);
+                this.playButtonText = this.add.text(500, 1450, '', {
+                    fontSize: '128px',
+                    fill: '#C1FD50',
+                    fontFamily: '"Times New Roman", Times, serif',
+                    fontWeight: 'bold'
                 }).setOrigin(0.5);
 
-                this.playButton.setInteractive();
-                this.playButton.on('pointerdown', () => this.startGame());
+                // Initially disable the button
+                this.playButton.removeInteractive();
 
-                this.restartButton = this.add.rectangle(500, 1450, 400, 120, 0xFF5722);
-                this.restartButtonText = this.add.text(500, 1450, 'RESTART', {
-                    fontSize: '64px',
-                    fill: '#FFFFFF'
-                }).setOrigin(0.5);
+                // Load music asynchronously after graphics are ready
+                this.load.audio('bgmusic', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/INDICADO-r4JgJ5CqnJx9IQF9dTzj6oUEZwHFw1.mp3?JD9t');
+                this.load.once('complete', () => {
+                    this.backgroundMusic = this.sound.add('bgmusic', { loop: true, volume: 1 });
+                    this.playButtonText.setText('~PLAY~');
+                    this.playButton.setInteractive();
+                    this.playButton.on('pointerdown', () => this.startGame());
+                });
+                this.load.start();
 
-                this.restartButton.setVisible(false);
-                this.restartButtonText.setVisible(false);
-                this.restartButton.setInteractive();
-                this.restartButton.on('pointerdown', () => this.startGame());
+                // Add heartbeat pulsing animation to the play button
+                this.tweens.add({
+                    targets: [this.playButton, this.playButtonText],
+                    scaleX: 1.2,
+                    scaleY: 1.2,
+                    duration: 200,
+                    ease: 'Power2.easeOut',
+                    yoyo: true,
+                    delay: 600,
+                    repeatDelay: 600,
+                    repeat: -1
+                });
 
                 this.jumpKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
                 this.input.on('pointerdown', () => {
@@ -274,7 +287,7 @@
                     this.slideTitleAway();
                 }
 
-                if (!this.musicStarted) {
+                if (!this.musicStarted && this.backgroundMusic) {
                     this.backgroundMusic.play();
                     this.musicStarted = true;
                 }
@@ -299,8 +312,6 @@
 
                 this.playButton.setVisible(false);
                 this.playButtonText.setVisible(false);
-                this.restartButton.setVisible(false);
-                this.restartButtonText.setVisible(false);
 
                 // Completely reset boulder state
                 this.boulder.setVisible(true);
@@ -689,7 +700,7 @@
                 default: 'arcade',
                 arcade: {
                     gravity: { y: 1200 },
-                    debug: true
+                    debug: false
                 }
             },
             scene: InfiniteRunner,
