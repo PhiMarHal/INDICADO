@@ -29,6 +29,7 @@
             max-height: 100vh;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@farcade/game-sdk@latest/dist/index.min.js"></script>
 </head>
 
 <body>
@@ -69,19 +70,19 @@
             }
 
             preload() {
-                this.load.image('hero', 'assets/hero.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hero-xAFh8jqbXx0mnyvqYRj0jFdw1smZL4.png?EXbV
-                this.load.image('rock', 'assets/rock.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/rock-i6hk2I2qbejoAMQ33p3ug9rdq7KcSm.png?RxR9
-                this.load.image('hat', 'assets/hat.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hat-GY75Pr3BWR0c4Aa0mVNsb8KNQJ2okx.png?eayE
-                this.load.image('spike1', 'assets/spike1.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike1-oqvzBCJKVpPifvsyKFioSeJBwUYk69.png?mepZ
-                this.load.image('spike2', 'assets/spike2.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike2-qHirzJs9ZYyWnTLq1otLqQWc6W0If6.png?5njH
-                this.load.image('spike3', 'assets/spike3.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike3-Ujn4qql1WP1WG5b0rAdnLVafLxnYFi.png?HdML
-                this.load.image('floor', 'assets/floor.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/floor-Iewo20ipVr6o3rxy2iXNzJtpBAKpNl.png?c7Eu
-                this.load.image('titlepic', 'assets/titlepic.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/titlepic-OXGzhprfgvTJzLtQ33jkSOoYUQLNSG.png?gp9v
+                this.load.image('hero', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hero-xAFh8jqbXx0mnyvqYRj0jFdw1smZL4.png?EXbV'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hero-xAFh8jqbXx0mnyvqYRj0jFdw1smZL4.png?EXbV
+                this.load.image('rock', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/rock-i6hk2I2qbejoAMQ33p3ug9rdq7KcSm.png?RxR9'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/rock-i6hk2I2qbejoAMQ33p3ug9rdq7KcSm.png?RxR9
+                this.load.image('hat', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hat-GY75Pr3BWR0c4Aa0mVNsb8KNQJ2okx.png?eayE'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hat-GY75Pr3BWR0c4Aa0mVNsb8KNQJ2okx.png?eayE
+                this.load.image('spike1', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike1-oqvzBCJKVpPifvsyKFioSeJBwUYk69.png?mepZ'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike1-oqvzBCJKVpPifvsyKFioSeJBwUYk69.png?mepZ
+                this.load.image('spike2', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike2-qHirzJs9ZYyWnTLq1otLqQWc6W0If6.png?5njH'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike2-qHirzJs9ZYyWnTLq1otLqQWc6W0If6.png?5njH
+                this.load.image('spike3', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike3-Ujn4qql1WP1WG5b0rAdnLVafLxnYFi.png?HdML'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike3-Ujn4qql1WP1WG5b0rAdnLVafLxnYFi.png?HdML
+                this.load.image('floor', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/floor-Iewo20ipVr6o3rxy2iXNzJtpBAKpNl.png?c7Eu'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/floor-Iewo20ipVr6o3rxy2iXNzJtpBAKpNl.png?c7Eu
+                this.load.image('titlepic', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/titlepic-OXGzhprfgvTJzLtQ33jkSOoYUQLNSG.png?gp9v'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/titlepic-OXGzhprfgvTJzLtQ33jkSOoYUQLNSG.png?gp9v
 
-                this.load.audio('jump1', 'assets/jump1.wav'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/Jump1-Ny5Mei5Zk5y2DMNcfuP9ZfBn9qVq6T.wav?ygNp
-                this.load.audio('jump2', 'assets/jump2.wav'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/jump2-DbI2P1kAk5pBSYpudJYtupfCvAO55Y.wav?u5qV
-                this.load.audio('ceiling', 'assets/ceiling.wav'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/ceiling-CEGtgO7IH7nMSI4cHWmlGd8kMUqND5.wav?savq
-                this.load.audio('boulder', 'assets/boulder.wav'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/boulder-O2GxXPFHSX0OewrYlZIr83BSndCAc0.wav?NX9H
+                this.load.audio('jump1', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/Jump1-Ny5Mei5Zk5y2DMNcfuP9ZfBn9qVq6T.wav?ygNp'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/Jump1-Ny5Mei5Zk5y2DMNcfuP9ZfBn9qVq6T.wav?ygNp
+                this.load.audio('jump2', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/jump2-DbI2P1kAk5pBSYpudJYtupfCvAO55Y.wav?u5qV'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/jump2-DbI2P1kAk5pBSYpudJYtupfCvAO55Y.wav?u5qV
+                this.load.audio('ceiling', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/ceiling-CEGtgO7IH7nMSI4cHWmlGd8kMUqND5.wav?savq'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/ceiling-CEGtgO7IH7nMSI4cHWmlGd8kMUqND5.wav?savq
+                this.load.audio('boulder', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/boulder-O2GxXPFHSX0OewrYlZIr83BSndCAc0.wav?NX9H'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/boulder-O2GxXPFHSX0OewrYlZIr83BSndCAc0.wav?NX9H
 
                 this.load.on('loaderror', (file) => {
                     console.log('Failed to load:', file.src);
@@ -193,6 +194,12 @@
                     this.playButton.on('pointerdown', () => this.startGame());
                 });
                 this.load.start();
+
+                // Farcade SDK: Signal that the game is fully loaded and ready to play.
+                if (window.FarcadeSDK) {
+                    window.FarcadeSDK.singlePlayer.actions.ready();
+                    console.log('Farcade SDK: Game ready signal sent.');
+                }
 
                 // Add heartbeat pulsing animation to the play button
                 this.tweens.add({
@@ -386,6 +393,13 @@
                         this.playButton.setVisible(true);
                         this.playButtonText.setVisible(true);
                         this.gameState = 'menu';
+
+                        // Farcade SDK: Signal game over and submit the player's score after full death sequence
+                        if (window.FarcadeSDK) {
+                            const scoreValue = Math.floor(this.gameTime / 10); // Converts milliseconds to centiseconds
+                            window.FarcadeSDK.singlePlayer.actions.gameOver({ score: scoreValue });
+                            console.log('Farcade SDK: Game over signal sent with score:', scoreValue);
+                        }
                     }
                 });
             }
@@ -706,6 +720,30 @@
         };
 
         const game = new Phaser.Game(config);
+
+        // Farcade SDK: Register event handlers for 'play_again' and 'toggle_mute'.
+        if (window.FarcadeSDK) {
+            // Handle play again requests from Farcade.
+            window.FarcadeSDK.on('play_again', () => {
+                console.log('Farcade SDK: Play again requested.');
+                const activeScene = game.scene.getScene('InfiniteRunner');
+                if (activeScene) {
+                    // Reset the game state by calling startGame, which handles full reset.
+                    activeScene.startGame();
+                    console.log('Farcade SDK: Game restarted.');
+                } else {
+                    console.warn('Farcade SDK: Could not find active scene to restart game.');
+                }
+            });
+
+            // Handle mute/unmute requests from Farcade.
+            window.FarcadeSDK.on('toggle_mute', (data) => {
+                console.log('Farcade SDK: Mute toggle requested, isMuted:', data.isMuted);
+                // Use Phaser's global sound manager to mute/unmute all audio
+                game.sound.mute = data.isMuted;
+                console.log('Farcade SDK: All game audio mute state set to:', data.isMuted);
+            });
+        }
     </script>
 </body>
 
