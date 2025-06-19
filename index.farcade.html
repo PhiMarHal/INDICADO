@@ -194,12 +194,6 @@
                 });
                 this.load.start();
 
-                // Farcade SDK: Signal that the game is fully loaded and ready to play.
-                if (window.FarcadeSDK) {
-                    window.FarcadeSDK.singlePlayer.actions.ready();
-                    console.log('Farcade SDK: Game ready signal sent.');
-                }
-
                 this.jumpKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
                 this.input.on('pointerdown', () => {
                     if (this.canJump && this.gameState === 'playing' && this.jumpCooldown <= 0) {
@@ -272,7 +266,7 @@
                 this.gameArea.setFillStyle(this.areaColors[0]);
 
                 // Set up play button - this is the final step
-                this.playButtonText.setText('~PLAY~');
+                this.playButtonText.setText('~RUN~');
                 this.playButton.setVisible(true);
                 this.playButtonText.setVisible(true);
                 this.playButton.setInteractive();
@@ -293,6 +287,12 @@
                 });
 
                 console.log('Game built - Ready to start');
+
+                // Farcade SDK: Signal that the game is fully loaded and ready to play.
+                if (window.FarcadeSDK) {
+                    window.FarcadeSDK.singlePlayer.actions.ready();
+                    console.log('Farcade SDK: Game ready signal sent.');
+                }
             }
 
             startGame() {
@@ -410,10 +410,23 @@
                         this.boulderHat.x = -200;
                         this.boulderHat.y = this.boulder.y - 128;
 
+                        // Make sure we reset spikes, so collisions don't happen again
+                        this.spikes.clear(true, true);
+                        this.flyingSpikes.clear(true, true);
+                        this.hitPoints = 0;
+
                         this.gameState = 'menu';
 
                         // Build the game again for next round
-                        this.buildGame();
+                        
+                        // Farcade SDK: Signal game over and submit the player's score after full death sequence
+                        if (window.FarcadeSDK) {
+                            const scoreValue = Math.floor(this.gameTime / 10); // Converts milliseconds to centiseconds
+                            window.FarcadeSDK.singlePlayer.actions.gameOver({ score: scoreValue });
+                            console.log('Farcade SDK: Game over signal sent with score:', scoreValue);
+                        }
+                        
+                        // Note: buildGame() removed for Farcade - will be called by play_again handler
                     }
                 });
             }
@@ -715,7 +728,7 @@
                 this.hero.body.setVelocity(0, 0);
                 this.hero.body.setAllowGravity(false);
                 this.hero.body.setImmovable(true);
-                this.isInvulnerable = false;
+                this.isInvulnerable = true;
             }
         }
 
@@ -747,11 +760,11 @@
                 console.log('Farcade SDK: Play again requested.');
                 const activeScene = game.scene.getScene('InfiniteRunner');
                 if (activeScene) {
-                    // Reset the game state by calling startGame, which handles full reset.
-                    activeScene.startGame();
-                    console.log('Farcade SDK: Game restarted.');
+                    // Build the game and show play button for user to tap
+                    activeScene.buildGame();
+                    console.log('Farcade SDK: Game rebuilt and ready for player interaction.');
                 } else {
-                    console.warn('Farcade SDK: Could not find active scene to restart game.');
+                    console.warn('Farcade SDK: Could not find active scene to rebuild game.');
                 }
             });
 

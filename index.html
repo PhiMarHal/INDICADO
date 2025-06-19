@@ -265,7 +265,7 @@
                 this.gameArea.setFillStyle(this.areaColors[0]);
 
                 // Set up play button - this is the final step
-                this.playButtonText.setText('~PLAY~');
+                this.playButtonText.setText('~RUN~');
                 this.playButton.setVisible(true);
                 this.playButtonText.setVisible(true);
                 this.playButton.setInteractive();
@@ -402,6 +402,11 @@
                         this.boulderHat.setVisible(false);
                         this.boulderHat.x = -200;
                         this.boulderHat.y = this.boulder.y - 128;
+
+                        // Make sure we reset spikes, so collisions don't happen again
+                        this.spikes.clear(true, true);
+                        this.flyingSpikes.clear(true, true);
+                        this.hitPoints = 0;
 
                         this.gameState = 'menu';
 
@@ -708,7 +713,7 @@
                 this.hero.body.setVelocity(0, 0);
                 this.hero.body.setAllowGravity(false);
                 this.hero.body.setImmovable(true);
-                this.isInvulnerable = false;
+                this.isInvulnerable = true;
             }
         }
 

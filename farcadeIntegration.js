@@ -89,51 +89,41 @@ function replaceAssetPathsWithUrls(htmlContent) {
     return modifiedContent;
 }
 
-
 function injectFarcadeGameLogic(html) {
     console.log('Injecting Farcade SDK game logic...');
 
     let modifiedHtml = html;
 
-    // 1. Inject ready() call
-    // The game's create function in InfiniteRunner class seems to be the appropriate place for 'ready'.
-    // We're looking for the line where `this.load.start()` is called after assets are loaded.
-    const createFunctionPattern = /(create\s*\(\)\s*\{[\s\S]*?this\.load\.once\('complete', \(\) => \{[\s\S]*?\}\);\s*this\.load\.start\(\);)/;
-    modifiedHtml = modifiedHtml.replace(createFunctionPattern, (match) => {
-        return `${match}\n\n                // Farcade SDK: Signal that the game is fully loaded and ready to play.\n                if (window.FarcadeSDK) {\n                    window.FarcadeSDK.singlePlayer.actions.ready();\n                    console.log('Farcade SDK: Game ready signal sent.');\n                }`;
-    });
-
-    // 2. Inject gameOver() call - Remove Farcade SDK call from here, it will be called later
-    // The `gameOver()` method is called when the player loses.
-    const gameOverMethodPattern = /(gameOver\s*\(\)\s*\{[\s\S]*?this\.isInvulnerable = false;\s*\})/m; // 'm' for multiline
-    modifiedHtml = modifiedHtml.replace(gameOverMethodPattern, (match) => {
-        // Don't add Farcade SDK call here - it will be added to slideTitleIn completion
-        return match;
-    });
-
-
-    // 3. Remove redundant boulder collision check that causes multiple gameOver calls
-    const boulderCollisionPattern = /if \(this\.hero\.x <= this\.boulder\.x \+ 150\) \{\s*this\.gameOver\(\);\s*\}/g;
-    modifiedHtml = modifiedHtml.replace(boulderCollisionPattern, '// Removed redundant boulder collision check');
-
-    // 4. Inject Farcade SDK gameOver call into slideTitleIn completion
-    const slideTitleInPattern = /(onComplete:\s*\(\)\s*=>\s*\{[\s\S]*?this\.titleSliding\s*=\s*false;[\s\S]*?this\.playButton\.setVisible\(true\);\s*this\.playButtonText\.setVisible\(true\);\s*this\.gameState\s*=\s*'menu';)/;
-    modifiedHtml = modifiedHtml.replace(slideTitleInPattern, (match) => {
+    // 1. Inject ready() call - now in buildGame() instead of create()
+    const buildGamePattern = /(buildGame\s*\(\)\s*\{[\s\S]*?console\.log\('Game built - Ready to start'\);)/;
+    modifiedHtml = modifiedHtml.replace(buildGamePattern, (match) => {
         return `${match}
 
+                // Farcade SDK: Signal that the game is fully loaded and ready to play.
+                if (window.FarcadeSDK) {
+                    window.FarcadeSDK.singlePlayer.actions.ready();
+                    console.log('Farcade SDK: Game ready signal sent.');
+                }`;
+    });
+
+    // 2. Inject Farcade SDK gameOver call and remove buildGame() from slideTitleIn completion
+    const slideTitleInPattern = /(onComplete:\s*\(\)\s*=>\s*\{[\s\S]*?this\.gameState\s*=\s*'menu';[\s\S]*?\/\/\s*Build the game again for next round[\s\S]*?)(this\.buildGame\(\);)/;
+    modifiedHtml = modifiedHtml.replace(slideTitleInPattern, (match, beforeBuildGame, buildGameCall) => {
+        return `${beforeBuildGame}
                         // Farcade SDK: Signal game over and submit the player's score after full death sequence
                         if (window.FarcadeSDK) {
                             const scoreValue = Math.floor(this.gameTime / 10); // Converts milliseconds to centiseconds
                             window.FarcadeSDK.singlePlayer.actions.gameOver({ score: scoreValue });
                             console.log('Farcade SDK: Game over signal sent with score:', scoreValue);
-                        }`;
+                        }
+                        
+                        // Note: buildGame() removed for Farcade - will be called by play_again handler`;
     });
 
-    // 5. Inject play_again and toggle_mute event handlers
-    // These listeners should be set up once, preferably after the Phaser.Game instance is created.
+    // 3. Inject play_again and toggle_mute event handlers - updated for new architecture
     const phaserGameInstancePattern = /(const\s+game\s*=\s*new\s+Phaser\.Game\(config\);)/;
     modifiedHtml = modifiedHtml.replace(phaserGameInstancePattern, (match) => {
-        return `${match}\n\n        // Farcade SDK: Register event handlers for 'play_again' and 'toggle_mute'.\n        if (window.FarcadeSDK) {\n            // Handle play again requests from Farcade.\n            window.FarcadeSDK.on('play_again', () => {\n                console.log('Farcade SDK: Play again requested.');\n                const activeScene = game.scene.getScene('InfiniteRunner');\n                if (activeScene) {\n                    // Reset the game state by calling startGame, which handles full reset.\n                    activeScene.startGame();\n                    console.log('Farcade SDK: Game restarted.');\n                } else {\n                    console.warn('Farcade SDK: Could not find active scene to restart game.');\n                }\n            });\n\n            // Handle mute/unmute requests from Farcade.\n            window.FarcadeSDK.on('toggle_mute', (data) => {\n                console.log('Farcade SDK: Mute toggle requested, isMuted:', data.isMuted);\n                // Use Phaser's global sound manager to mute/unmute all audio\n                game.sound.mute = data.isMuted;\n                console.log('Farcade SDK: All game audio mute state set to:', data.isMuted);\n            });\n        }`;
+        return `${match}\n\n        // Farcade SDK: Register event handlers for 'play_again' and 'toggle_mute'.\n        if (window.FarcadeSDK) {\n            // Handle play again requests from Farcade.\n            window.FarcadeSDK.on('play_again', () => {\n                console.log('Farcade SDK: Play again requested.');\n                const activeScene = game.scene.getScene('InfiniteRunner');\n                if (activeScene) {\n                    // Build the game and show play button for user to tap\n                    activeScene.buildGame();\n                    console.log('Farcade SDK: Game rebuilt and ready for player interaction.');\n                } else {\n                    console.warn('Farcade SDK: Could not find active scene to rebuild game.');\n                }\n            });\n\n            // Handle mute/unmute requests from Farcade.\n            window.FarcadeSDK.on('toggle_mute', (data) => {\n                console.log('Farcade SDK: Mute toggle requested, isMuted:', data.isMuted);\n                // Use Phaser's global sound manager to mute/unmute all audio\n                game.sound.mute = data.isMuted;\n                console.log('Farcade SDK: All game audio mute state set to:', data.isMuted);\n            });\n        }`;
     });
 
     return modifiedHtml;
