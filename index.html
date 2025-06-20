@@ -514,13 +514,6 @@
 
             update(time, delta) {
                 if (this.gameState === 'playing') {
-                    // Defensive check: prevent hero from clipping below floor
-                    if (this.hero.y > this.floorY - 32) {
-                        console.warn('Hero clipping detected! Correcting position from', this.hero.y, 'to', this.floorY - 32);
-                        this.hero.y = this.floorY - 32;
-                        this.hero.body.setVelocityY(0); // Stop downward movement
-                    }
-
                     this.gameTime += delta;
                     const totalCentiseconds = Math.floor(this.gameTime / 10);
                     const minutes = Math.floor(totalCentiseconds / 6000);
@@ -547,7 +540,7 @@
 
                     if (this.hero.body.touching.down && this.jumpCount === 0) {
                         if (!this.heroBaseY) {
-                            this.heroBaseY = this.hero.y;
+                            this.heroBaseY = Math.min(this.hero.y, this.floorY - 32);  // Never capture a position below floor
                         }
                         this.runBouncePhase += 0.5;
                         const bounce = Math.abs(Math.sin(this.runBouncePhase)) * 10;
@@ -556,6 +549,13 @@
                         this.hero.setRotation(rotation);
                     } else {
                         this.heroBaseY = 0;
+                    }
+
+                    // Defensive check: prevent hero from clipping below floor
+                    if (this.hero.y > this.floorY - 32) {
+                        console.warn('Hero clipping detected! Correcting position from', this.hero.y, 'to', this.floorY - 32);
+                        this.hero.y = this.floorY - 32;
+                        this.hero.body.setVelocityY(0); // Stop downward movement
                     }
 
                     const scrollDelta = this.scrollSpeed * delta / 1000;
