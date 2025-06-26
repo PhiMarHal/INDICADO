@@ -89,11 +89,11 @@
 
             preload() {
                 this.load.image('hero', 'assets/hero.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hero-xAFh8jqbXx0mnyvqYRj0jFdw1smZL4.png?EXbV
-                this.load.image('rock', 'assets/rock.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/rock-i6hk2I2qbejoAMQ33p3ug9rdq7KcSm.png?RxR9
+                this.load.image('rock', 'assets/rock.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/rock_v2-U0ka4ciPJi6de6PuV3NYQvZZJCgUuS.png?djzN
                 this.load.image('hat', 'assets/hat.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hat-GY75Pr3BWR0c4Aa0mVNsb8KNQJ2okx.png?eayE
-                this.load.image('spike1', 'assets/spike1.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike1-oqvzBCJKVpPifvsyKFioSeJBwUYk69.png?mepZ
-                this.load.image('spike2', 'assets/spike2.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike2-qHirzJs9ZYyWnTLq1otLqQWc6W0If6.png?5njH
-                this.load.image('spike3', 'assets/spike3.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike3-Ujn4qql1WP1WG5b0rAdnLVafLxnYFi.png?HdML
+                this.load.image('spike1', 'assets/spike1.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike1_v2-uK2vmN1knaIcJxgdYCRVGl6kKMYSlX.png?r8B2
+                this.load.image('spike2', 'assets/spike2.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike2_v2-5GIxEm0HZDewN1GS3ko8kGGQTs52ca.png?GB5i
+                this.load.image('spike3', 'assets/spike3.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike3_v2-5BAfJlnuBVNT5jsezRdtUfSY1Ec2La.png?8JC0
                 this.load.image('floor', 'assets/floor.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/floor-Iewo20ipVr6o3rxy2iXNzJtpBAKpNl.png?c7Eu
                 this.load.image('titlepic', 'assets/titlepic.png'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/titlepic-OXGzhprfgvTJzLtQ33jkSOoYUQLNSG.png?gp9v
 
@@ -158,7 +158,7 @@
 
                 this.boulder = this.physics.add.sprite(-200, this.floorY - 192, 'rock');
                 this.boulder.setDisplaySize(384, 384);
-                this.boulder.body.setSize(832, 832);
+                this.boulder.body.setSize(470, 470); // no idea why 512x512 won't fit
                 this.boulder.setVisible(false);
 
                 this.boulderHat = this.add.sprite(-200, this.floorY - 320, 'hat');
