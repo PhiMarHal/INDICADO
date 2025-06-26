@@ -62,7 +62,7 @@
                 this.maxJumps = Infinity;
                 this.gameTime = 0;
                 this.spikeSpawnTimer = 0;
-                this.baseSpikeSpawnInterval = 2000;
+                this.baseSpikeSpawnInterval = 1000;
                 this.canJump = false;
                 this.jumpCooldown = 0;
                 this.jumpHoldTime = 0;
@@ -443,7 +443,7 @@
                 let currentInterval = this.baseSpikeSpawnInterval;
 
                 for (let i = 0; i < difficultySteps; i++) {
-                    currentInterval *= 0.9;
+                    currentInterval *= 0.94;
                 }
 
                 return currentInterval;
@@ -549,7 +549,7 @@
                     }
 
                     // Only reset jump count if hero is on the actual ground (not just touching something)
-                    const onGround = Math.abs(this.hero.y - (this.floorY - 32)) < 32; // Within 32 pixels of ground position
+                    const onGround = Math.abs(this.hero.y - (this.floorY - 32)) < 64; // Within 32 pixels of ground position
                     if (onGround &&
                         this.hero.body.velocity.y >= -50 && // Not jumping hard
                         this.time.now - this.lastJumpTime > 100 &&
