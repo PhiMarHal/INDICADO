@@ -38,6 +38,23 @@
         class InfiniteRunner extends Phaser.Scene {
             constructor() {
                 super({ key: 'InfiniteRunner' });
+
+                // ===== GAME CONFIGURATION =====
+                this.GRAVITY = 6000;
+                this.FIRST_JUMP_POWER = -2400;
+                this.INFINITE_JUMP_POWER = -1600;
+                this.JUMP_COOLDOWN_FIRST = 100;
+                this.JUMP_COOLDOWN_INFINITE = 100;
+
+                // Spike dimensions (in-game pixels)
+                this.SPIKE1_WIDTH = 40;
+                this.SPIKE1_HEIGHT = 320;
+                this.SPIKE2_WIDTH = 40;
+                this.SPIKE2_HEIGHT = 240;
+                this.SPIKE3_WIDTH = 40;
+                this.SPIKE3_HEIGHT = 160;
+                // ==============================
+
                 this.gameState = 'menu';
                 this.scrollSpeed = 800;
                 this.jumpCount = 0;
@@ -49,6 +66,8 @@
                 this.jumpCooldown = 0;
                 this.jumpHoldTime = 0;
                 this.lastJumpTime = 0;
+                this.lastSpikeHitTime = 0;
+                this.lastSpikeHitTime = 0;
 
                 this.gameAreaTop = 300;
                 this.gameAreaBottom = 1300;
@@ -200,7 +219,8 @@
                     }
                 });
 
-                this.physics.add.collider(this.hero, this.platforms, this.heroHitPlatform, null, this);
+                // Simple collision without special ceiling behavior
+                this.physics.add.collider(this.hero, this.platforms);
                 this.physics.add.collider(this.boulder, this.platforms);
                 this.physics.add.overlap(this.hero, this.spikes, this.hitSpike, null, this);
                 this.physics.add.overlap(this.boulder, this.spikes, this.boulderHitSpike, null, this);
@@ -223,6 +243,7 @@
                 this.jumpCount = 0;
                 this.canJump = false;
                 this.lastJumpTime = 0;
+                this.lastSpikeHitTime = 0;
                 this.spikeSpawnTimer = 0;
                 this.hitPoints = 0;
                 this.lastDifficultyStep = -1;
@@ -251,7 +272,7 @@
                 this.hero.x = 250;
                 this.hero.y = this.floorY - 32;
                 this.hero.body.setVelocity(0, 0);
-                this.hero.body.setGravityY(2400);
+                this.hero.body.setGravityY(this.GRAVITY);
                 this.hero.body.setAllowGravity(true);
                 this.hero.body.setImmovable(false);
                 this.hero.setRotation(0);
@@ -489,19 +510,17 @@
                     this.jumpSound2.stop();
 
                     if (isFirstJump) {
-                        this.hero.body.setVelocityY(-2000);
-                        this.hero.body.setGravityY(2400);
+                        this.hero.body.setVelocityY(this.FIRST_JUMP_POWER);
                         this.hero.setRotation(0);
                         this.jumpSound1.play();
-                        this.jumpCooldown = 20; // Short cooldown for first jump
+                        this.jumpCooldown = this.JUMP_COOLDOWN_FIRST;
                         console.log('First jump initiated - Velocity:', this.hero.body.velocity.y);
                     } else {
-                        this.hero.body.setVelocityY(-1200);
-                        this.hero.body.setGravityY(1600);
+                        this.hero.body.setVelocityY(this.INFINITE_JUMP_POWER);
                         this.tweens.killTweensOf(this.hero);
                         this.hero.setRotation(0);
                         this.jumpSound2.play();
-                        this.jumpCooldown = 200; // Longer cooldown for infinite jumps
+                        this.jumpCooldown = this.JUMP_COOLDOWN_INFINITE;
                         this.tweens.add({
                             targets: this.hero,
                             rotation: Math.PI * 2,
@@ -529,9 +548,8 @@
                         this.jump();
                     }
 
-                    if (this.hero.body.touching.down && this.time.now - this.lastJumpTime > 100) {
+                    if (this.hero.body.touching.down && this.time.now - this.lastJumpTime > 100 && this.time.now - this.lastSpikeHitTime > 100) {
                         this.jumpCount = 0;
-                        this.hero.body.setGravityY(2400);
                         if (!this.tweens.isTweening(this.hero)) {
                             this.hero.setRotation(0);
                         }
@@ -610,22 +628,36 @@
                 }
             }
 
+            getSpikeSize(spikeType) {
+                switch (spikeType) {
+                    case 'spike1':
+                        return { width: this.SPIKE1_WIDTH, height: this.SPIKE1_HEIGHT };
+                    case 'spike2':
+                        return { width: this.SPIKE2_WIDTH, height: this.SPIKE2_HEIGHT };
+                    case 'spike3':
+                        return { width: this.SPIKE3_WIDTH, height: this.SPIKE3_HEIGHT };
+                    default:
+                        return { width: this.SPIKE2_WIDTH, height: this.SPIKE2_HEIGHT };
+                }
+            }
+
             spawnSpike() {
                 const spikeTypes = ['spike3', 'spike2', 'spike1'];
                 const positions = ['ground', 'ceiling'];
 
                 const spikeType = Phaser.Utils.Array.GetRandom(spikeTypes);
                 const position = Phaser.Utils.Array.GetRandom(positions);
+                const spikeSize = this.getSpikeSize(spikeType);
 
                 let spike;
                 if (position === 'ground') {
                     spike = this.spikes.create(1100, this.floorY, spikeType);
                     spike.setOrigin(0.5, 1);
-                    spike.setScale(0.5);
+                    spike.setDisplaySize(spikeSize.width, spikeSize.height);
                 } else {
                     spike = this.spikes.create(1100, this.ceilingY + 125, spikeType);
                     spike.setOrigin(0.5, 0);
-                    spike.setScale(0.5);
+                    spike.setDisplaySize(spikeSize.width, spikeSize.height);
                     spike.setFlipY(true);
                 }
 
@@ -635,19 +667,12 @@
                 console.log('Spawning', position, spikeType, '- Y:', spike.y, '- Current interval:', this.getCurrentSpikeInterval());
             }
 
-            heroHitPlatform(hero, platform) {
-                if (platform.y < this.floorY) {
-                    this.hero.body.setVelocityY(3000);
-                    this.hero.body.setGravityY(4800);
-                    this.jumpCount = 0;
-                    this.ceilingSound.play(); // Play ceiling hit sound
-                    console.log('Hero hit ceiling - slamming down!');
-                }
-            }
-
             hitSpike(hero, spike) {
                 // Prevent multiple hits with invulnerability frames
                 if (this.isInvulnerable) return;
+
+                // Record when we hit a spike to prevent false jump resets
+                this.lastSpikeHitTime = this.time.now;
 
                 if (this.hitPoints > 0) {
                     // Player has hit points - use one up instead of dying
@@ -677,7 +702,8 @@
 
                     // Make the spike fly away
                     const flyingSpike = this.flyingSpikes.create(spike.x, spike.y, spike.texture.key);
-                    flyingSpike.setScale(0.5);
+                    const spikeSize = this.getSpikeSize(spike.texture.key);
+                    flyingSpike.setDisplaySize(spikeSize.width, spikeSize.height);
                     flyingSpike.setFlipY(spike.flipY);
                     flyingSpike.body.setVelocity(
                         Phaser.Math.Between(300, 600),
@@ -696,7 +722,8 @@
 
             boulderHitSpike(boulder, spike) {
                 const flyingSpike = this.flyingSpikes.create(spike.x, spike.y, spike.texture.key);
-                flyingSpike.setScale(0.5);
+                const spikeSize = this.getSpikeSize(spike.texture.key);
+                flyingSpike.setDisplaySize(spikeSize.width, spikeSize.height);
                 flyingSpike.setFlipY(spike.flipY);
                 flyingSpike.body.setVelocity(
                     Phaser.Math.Between(300, 600),
