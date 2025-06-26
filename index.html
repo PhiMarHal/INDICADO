@@ -43,16 +43,17 @@
                 this.GRAVITY = 6000;
                 this.FIRST_JUMP_POWER = -2400;
                 this.INFINITE_JUMP_POWER = -1600;
-                this.JUMP_COOLDOWN_FIRST = 100;
-                this.JUMP_COOLDOWN_INFINITE = 100;
+                this.JUMP_COOLDOWN_FIRST = 120;
+                this.JUMP_COOLDOWN_INFINITE = 120;
+                this.INVUL_DURATION = 500;
 
                 // Spike dimensions (in-game pixels)
                 this.SPIKE1_WIDTH = 40;
-                this.SPIKE1_HEIGHT = 320;
+                this.SPIKE1_HEIGHT = 280;
                 this.SPIKE2_WIDTH = 40;
-                this.SPIKE2_HEIGHT = 240;
+                this.SPIKE2_HEIGHT = 210;
                 this.SPIKE3_WIDTH = 40;
-                this.SPIKE3_HEIGHT = 160;
+                this.SPIKE3_HEIGHT = 140;
                 // ==============================
 
                 this.gameState = 'menu';
@@ -66,7 +67,6 @@
                 this.jumpCooldown = 0;
                 this.jumpHoldTime = 0;
                 this.lastJumpTime = 0;
-                this.lastSpikeHitTime = 0;
                 this.lastSpikeHitTime = 0;
 
                 this.gameAreaTop = 300;
@@ -141,15 +141,15 @@
                 }
 
                 this.platforms = this.physics.add.staticGroup();
-                const ground = this.add.rectangle(500, this.floorY + 20, 2000, 40, 0xffffff);
-                ground.setVisible(false);
-                this.physics.add.existing(ground, true);
-                this.platforms.add(ground);
+                this.ground = this.add.rectangle(500, this.floorY + 20, 2000, 40, 0xffffff);
+                this.ground.setVisible(false);
+                this.physics.add.existing(this.ground, true);
+                this.platforms.add(this.ground);
 
-                const ceiling = this.add.rectangle(500, this.ceilingY + 105, 2000, 40, 0xffffff);
-                ceiling.setVisible(false);
-                this.physics.add.existing(ceiling, true);
-                this.platforms.add(ceiling);
+                this.ceiling = this.add.rectangle(500, this.ceilingY + 105, 2000, 40, 0xffffff);
+                this.ceiling.setVisible(false);
+                this.physics.add.existing(this.ceiling, true);
+                this.platforms.add(this.ceiling);
 
                 this.hero = this.physics.add.sprite(250, 1000, 'hero');
                 this.hero.setDisplaySize(64, 64);
@@ -493,7 +493,7 @@
             flashPlayer() {
                 // Flash the player red for damage indication
                 this.hero.setTint(0xff0000);
-                this.time.delayedCall(200, () => {
+                this.time.delayedCall(this.INVUL_DURATION, () => {
                     if (this.gameState === 'playing') { // Only clear tint if still playing
                         this.hero.clearTint();
                     }
@@ -548,14 +548,17 @@
                         this.jump();
                     }
 
-                    if (this.hero.body.touching.down && this.time.now - this.lastJumpTime > 100 && this.time.now - this.lastSpikeHitTime > 100) {
+                    // Only reset jump count if hero is on the actual ground (not just touching something)
+                    const onGround = Math.abs(this.hero.y - (this.floorY - 32)) < 32; // Within 32 pixels of ground position
+                    if (onGround &&
+                        this.hero.body.velocity.y >= -50 && // Not jumping hard
+                        this.time.now - this.lastJumpTime > 100 &&
+                        this.time.now - this.lastSpikeHitTime > 100) {
                         this.jumpCount = 0;
-                        if (!this.tweens.isTweening(this.hero)) {
-                            this.hero.setRotation(0);
-                        }
                         console.log('Hero grounded - Jump count reset');
                     }
 
+                    // Running animation - still uses touching.down else it looks weird visually. should be ok due to jumpCount = 0 req
                     if (this.hero.body.touching.down && this.jumpCount === 0) {
                         if (!this.heroBaseY) {
                             this.heroBaseY = Math.min(this.hero.y, this.floorY - 32);  // Never capture a position below floor
@@ -671,7 +674,7 @@
                 // Prevent multiple hits with invulnerability frames
                 if (this.isInvulnerable) return;
 
-                // Record when we hit a spike to prevent false jump resets
+                // Record when we hit a spike
                 this.lastSpikeHitTime = this.time.now;
 
                 if (this.hitPoints > 0) {
@@ -696,7 +699,7 @@
 
                     // Set invulnerability frames to prevent multiple hits
                     this.isInvulnerable = true;
-                    this.time.delayedCall(500, () => {
+                    this.time.delayedCall(this.INVUL_DURATION, () => {
                         this.isInvulnerable = false;
                     });
 
