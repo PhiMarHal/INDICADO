@@ -25,7 +25,7 @@
             height: 100vh;
             position: relative;
             margin: 0 auto;
-            max-width: 600px;
+            max-width: 540px;
             max-height: 100vh;
         }
     </style>
@@ -39,17 +39,36 @@
         class InfiniteRunner extends Phaser.Scene {
             constructor() {
                 super({ key: 'InfiniteRunner' });
+
+                // ===== GAME CONFIGURATION =====
+                this.GRAVITY = 6000;
+                this.FIRST_JUMP_POWER = -2400;
+                this.INFINITE_JUMP_POWER = -1600;
+                this.JUMP_COOLDOWN_FIRST = 120;
+                this.JUMP_COOLDOWN_INFINITE = 120;
+                this.INVUL_DURATION = 500;
+
+                // Spike dimensions (in-game pixels)
+                this.SPIKE1_WIDTH = 40;
+                this.SPIKE1_HEIGHT = 280;
+                this.SPIKE2_WIDTH = 40;
+                this.SPIKE2_HEIGHT = 210;
+                this.SPIKE3_WIDTH = 40;
+                this.SPIKE3_HEIGHT = 140;
+                // ==============================
+
                 this.gameState = 'menu';
                 this.scrollSpeed = 800;
                 this.jumpCount = 0;
                 this.maxJumps = Infinity;
                 this.gameTime = 0;
                 this.spikeSpawnTimer = 0;
-                this.baseSpikeSpawnInterval = 2000;
+                this.baseSpikeSpawnInterval = 1000;
                 this.canJump = false;
                 this.jumpCooldown = 0;
                 this.jumpHoldTime = 0;
                 this.lastJumpTime = 0;
+                this.lastSpikeHitTime = 0;
 
                 this.gameAreaTop = 300;
                 this.gameAreaBottom = 1300;
@@ -71,11 +90,11 @@
 
             preload() {
                 this.load.image('hero', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hero-xAFh8jqbXx0mnyvqYRj0jFdw1smZL4.png?EXbV'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hero-xAFh8jqbXx0mnyvqYRj0jFdw1smZL4.png?EXbV
-                this.load.image('rock', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/rock-i6hk2I2qbejoAMQ33p3ug9rdq7KcSm.png?RxR9'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/rock-i6hk2I2qbejoAMQ33p3ug9rdq7KcSm.png?RxR9
+                this.load.image('rock', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/rock_v2-U0ka4ciPJi6de6PuV3NYQvZZJCgUuS.png?djzN'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/rock_v2-U0ka4ciPJi6de6PuV3NYQvZZJCgUuS.png?djzN
                 this.load.image('hat', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hat-GY75Pr3BWR0c4Aa0mVNsb8KNQJ2okx.png?eayE'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/hat-GY75Pr3BWR0c4Aa0mVNsb8KNQJ2okx.png?eayE
-                this.load.image('spike1', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike1-oqvzBCJKVpPifvsyKFioSeJBwUYk69.png?mepZ'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike1-oqvzBCJKVpPifvsyKFioSeJBwUYk69.png?mepZ
-                this.load.image('spike2', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike2-qHirzJs9ZYyWnTLq1otLqQWc6W0If6.png?5njH'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike2-qHirzJs9ZYyWnTLq1otLqQWc6W0If6.png?5njH
-                this.load.image('spike3', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike3-Ujn4qql1WP1WG5b0rAdnLVafLxnYFi.png?HdML'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike3-Ujn4qql1WP1WG5b0rAdnLVafLxnYFi.png?HdML
+                this.load.image('spike1', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike1_v2-uK2vmN1knaIcJxgdYCRVGl6kKMYSlX.png?r8B2'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike1_v2-uK2vmN1knaIcJxgdYCRVGl6kKMYSlX.png?r8B2
+                this.load.image('spike2', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike2_v2-5GIxEm0HZDewN1GS3ko8kGGQTs52ca.png?GB5i'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike2_v2-5GIxEm0HZDewN1GS3ko8kGGQTs52ca.png?GB5i
+                this.load.image('spike3', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike3_v2-5BAfJlnuBVNT5jsezRdtUfSY1Ec2La.png?8JC0'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/spike3_v2-5BAfJlnuBVNT5jsezRdtUfSY1Ec2La.png?8JC0
                 this.load.image('floor', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/floor-Iewo20ipVr6o3rxy2iXNzJtpBAKpNl.png?c7Eu'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/floor-Iewo20ipVr6o3rxy2iXNzJtpBAKpNl.png?c7Eu
                 this.load.image('titlepic', 'https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/titlepic-OXGzhprfgvTJzLtQ33jkSOoYUQLNSG.png?gp9v'); // https://lqy3lriiybxcejon.public.blob.vercel-storage.com/b0c82f56-f0ea-4655-906f-6e9aaeeddfbc/titlepic-OXGzhprfgvTJzLtQ33jkSOoYUQLNSG.png?gp9v
 
@@ -90,9 +109,9 @@
             }
 
             create() {
-                this.add.rectangle(500, 150, 1000, 300, 0x000000);
-                this.gameArea = this.add.rectangle(500, 800, 1000, 1000, 0x87CEEB);
-                this.add.rectangle(500, 1450, 1000, 300, 0x000000);
+                this.add.rectangle(450, 150, 900, 300, 0x000000);
+                this.gameArea = this.add.rectangle(450, 800, 900, 1000, 0x87CEEB);
+                this.add.rectangle(450, 1450, 900, 300, 0x000000);
 
                 // Color progression for difficulty steps - lighter tones
                 this.areaColors = [
@@ -108,7 +127,7 @@
 
                 this.floorTiles = [];
                 for (let i = 0; i < 3; i++) {
-                    const tile = this.add.tileSprite(i * 1500, this.floorY, 3000, 250, 'floor');
+                    const tile = this.add.tileSprite(i * 1350, this.floorY, 2700, 250, 'floor');
                     tile.setOrigin(0, 0);
                     tile.setScale(0.5);
                     this.floorTiles.push(tile);
@@ -116,34 +135,34 @@
 
                 this.ceilingTiles = [];
                 for (let i = 0; i < 3; i++) {
-                    const tile = this.add.tileSprite(i * 1500, this.ceilingY, 3000, 250, 'floor');
+                    const tile = this.add.tileSprite(i * 1350, this.ceilingY, 2700, 250, 'floor');
                     tile.setOrigin(0, 1);
                     tile.setScale(0.5, -0.5);
                     this.ceilingTiles.push(tile);
                 }
 
                 this.platforms = this.physics.add.staticGroup();
-                const ground = this.add.rectangle(500, this.floorY + 20, 2000, 40, 0xffffff);
-                ground.setVisible(false);
-                this.physics.add.existing(ground, true);
-                this.platforms.add(ground);
+                this.ground = this.add.rectangle(450, this.floorY + 20, 1800, 40, 0xffffff);
+                this.ground.setVisible(false);
+                this.physics.add.existing(this.ground, true);
+                this.platforms.add(this.ground);
 
-                const ceiling = this.add.rectangle(500, this.ceilingY + 105, 2000, 40, 0xffffff);
-                ceiling.setVisible(false);
-                this.physics.add.existing(ceiling, true);
-                this.platforms.add(ceiling);
+                this.ceiling = this.add.rectangle(450, this.ceilingY + 105, 1800, 40, 0xffffff);
+                this.ceiling.setVisible(false);
+                this.physics.add.existing(this.ceiling, true);
+                this.platforms.add(this.ceiling);
 
-                this.hero = this.physics.add.sprite(250, 1000, 'hero');
+                this.hero = this.physics.add.sprite(225, 1000, 'hero');
                 this.hero.setDisplaySize(64, 64);
                 this.hero.setBounce(0.1);
                 this.hero.setCollideWorldBounds(true);
 
-                this.boulder = this.physics.add.sprite(-200, this.floorY - 192, 'rock');
+                this.boulder = this.physics.add.sprite(-192, this.floorY - 192, 'rock');
                 this.boulder.setDisplaySize(384, 384);
-                this.boulder.body.setSize(832, 832);
+                this.boulder.body.setSize(470, 470); // no idea why 512x512 won't fit
                 this.boulder.setVisible(false);
 
-                this.boulderHat = this.add.sprite(-200, this.floorY - 320, 'hat');
+                this.boulderHat = this.add.sprite(-192, this.floorY - 320, 'hat');
                 this.boulderHat.setDisplaySize(256, 256);
                 this.boulderHat.setVisible(false);
 
@@ -159,7 +178,7 @@
 
                 // Create hit point sprites in the black void (bottom area)
                 this.hitPointSprites = [];
-                const startX = 320;
+                const startX = 256;
                 for (let i = 0; i < this.maxHitPoints; i++) {
                     const hitPoint = this.add.sprite(startX + (i * 128), this.hitPointBaseY, 'hero');
                     hitPoint.setDisplaySize(128, 128);
@@ -168,14 +187,14 @@
                     this.hitPointTweens.push(null); // Track tween for each hit point
                 }
 
-                this.timerText = this.add.text(500, 150, '00:00:00', {
+                this.timerText = this.add.text(450, 150, '00:00:00', {
                     fontSize: '128px',
                     fill: '#FFFFFF',
                     fontFamily: 'monospace'
                 }).setOrigin(0.5);
 
-                this.playButton = this.add.rectangle(500, 1450, 700, 200, 0x000000);
-                this.playButtonText = this.add.text(500, 1450, '', {
+                this.playButton = this.add.rectangle(450, 1450, 630, 200, 0x000000);
+                this.playButtonText = this.add.text(450, 1450, '', {
                     fontSize: '128px',
                     fill: '#C1FD50',
                     fontFamily: '"Times New Roman", Times, serif',
@@ -201,15 +220,16 @@
                     }
                 });
 
-                this.physics.add.collider(this.hero, this.platforms, this.heroHitPlatform, null, this);
+                // Simple collision without special ceiling behavior
+                this.physics.add.collider(this.hero, this.platforms);
                 this.physics.add.collider(this.boulder, this.platforms);
                 this.physics.add.overlap(this.hero, this.spikes, this.hitSpike, null, this);
                 this.physics.add.overlap(this.boulder, this.spikes, this.boulderHitSpike, null, this);
 
-                this.physics.world.setBounds(0, this.gameAreaTop, 1000, this.gameAreaHeight);
+                this.physics.world.setBounds(0, this.gameAreaTop, 900, this.gameAreaHeight);
 
-                this.titlePic = this.add.image(500, 800, 'titlepic');
-                this.titlePic.setDisplaySize(1200, 760);
+                this.titlePic = this.add.image(450, 800, 'titlepic');
+                this.titlePic.setDisplaySize(1080, 760);
                 this.titlePic.setDepth(1000);
 
                 this.titleSliding = false;
@@ -224,6 +244,7 @@
                 this.jumpCount = 0;
                 this.canJump = false;
                 this.lastJumpTime = 0;
+                this.lastSpikeHitTime = 0;
                 this.spikeSpawnTimer = 0;
                 this.hitPoints = 0;
                 this.lastDifficultyStep = -1;
@@ -238,21 +259,21 @@
 
                 // Completely reset boulder state
                 this.boulder.setVisible(true);
-                this.boulder.x = 50;
+                this.boulder.x = 32;
                 this.boulder.y = this.floorY - 192;
                 this.boulder.body.setVelocity(0, 0); // Clear any accumulated velocity
                 this.boulder.body.setAngularVelocity(0); // Clear rotation velocity
                 this.boulder.setRotation(0); // Reset visual rotation
 
                 this.boulderHat.setVisible(true);
-                this.boulderHat.x = 50;
+                this.boulderHat.x = 32;
                 this.boulderHat.y = this.boulder.y - 128;
 
                 // Reset hero position
-                this.hero.x = 250;
+                this.hero.x = 240;
                 this.hero.y = this.floorY - 32;
                 this.hero.body.setVelocity(0, 0);
-                this.hero.body.setGravityY(2400);
+                this.hero.body.setGravityY(this.GRAVITY);
                 this.hero.body.setAllowGravity(true);
                 this.hero.body.setImmovable(false);
                 this.hero.setRotation(0);
@@ -376,7 +397,7 @@
 
                 this.tweens.add({
                     targets: this.titlePic,
-                    x: -1000,
+                    x: -900,
                     duration: 800,
                     ease: 'Power2',
                     onComplete: () => {
@@ -390,12 +411,12 @@
                 if (this.titleSliding) return;
 
                 this.titleSliding = true;
-                this.titlePic.x = 1500;
+                this.titlePic.x = 1350;
                 this.titlePic.setVisible(true);
 
                 this.tweens.add({
                     targets: this.titlePic,
-                    x: 500,
+                    x: 450,
                     duration: 800,
                     ease: 'Power2',
                     onComplete: () => {
@@ -404,10 +425,10 @@
                         // Reset boulder first (before UI elements)
                         this.boulderSound.stop();
                         this.boulder.setVisible(false);
-                        this.boulder.x = -200;
+                        this.boulder.x = -180;
                         this.boulder.y = this.floorY - 192;
                         this.boulderHat.setVisible(false);
-                        this.boulderHat.x = -200;
+                        this.boulderHat.x = -180;
                         this.boulderHat.y = this.boulder.y - 128;
 
                         // Make sure we reset spikes, so collisions don't happen again
@@ -437,7 +458,7 @@
                 let currentInterval = this.baseSpikeSpawnInterval;
 
                 for (let i = 0; i < difficultySteps; i++) {
-                    currentInterval *= 0.9;
+                    currentInterval *= 0.94;
                 }
 
                 return currentInterval;
@@ -487,7 +508,7 @@
             flashPlayer() {
                 // Flash the player red for damage indication
                 this.hero.setTint(0xff0000);
-                this.time.delayedCall(200, () => {
+                this.time.delayedCall(this.INVUL_DURATION, () => {
                     if (this.gameState === 'playing') { // Only clear tint if still playing
                         this.hero.clearTint();
                     }
@@ -504,19 +525,17 @@
                     this.jumpSound2.stop();
 
                     if (isFirstJump) {
-                        this.hero.body.setVelocityY(-2000);
-                        this.hero.body.setGravityY(2400);
+                        this.hero.body.setVelocityY(this.FIRST_JUMP_POWER);
                         this.hero.setRotation(0);
                         this.jumpSound1.play();
-                        this.jumpCooldown = 20; // Short cooldown for first jump
+                        this.jumpCooldown = this.JUMP_COOLDOWN_FIRST;
                         console.log('First jump initiated - Velocity:', this.hero.body.velocity.y);
                     } else {
-                        this.hero.body.setVelocityY(-1200);
-                        this.hero.body.setGravityY(1600);
+                        this.hero.body.setVelocityY(this.INFINITE_JUMP_POWER);
                         this.tweens.killTweensOf(this.hero);
                         this.hero.setRotation(0);
                         this.jumpSound2.play();
-                        this.jumpCooldown = 200; // Longer cooldown for infinite jumps
+                        this.jumpCooldown = this.JUMP_COOLDOWN_INFINITE;
                         this.tweens.add({
                             targets: this.hero,
                             rotation: Math.PI * 2,
@@ -544,15 +563,17 @@
                         this.jump();
                     }
 
-                    if (this.hero.body.touching.down && this.time.now - this.lastJumpTime > 100) {
+                    // Only reset jump count if hero is on the actual ground (not just touching something)
+                    const onGround = Math.abs(this.hero.y - (this.floorY - 32)) < 64; // Within 32 pixels of ground position
+                    if (onGround &&
+                        this.hero.body.velocity.y >= -50 && // Not jumping hard
+                        this.time.now - this.lastJumpTime > 100 &&
+                        this.time.now - this.lastSpikeHitTime > 100) {
                         this.jumpCount = 0;
-                        this.hero.body.setGravityY(2400);
-                        if (!this.tweens.isTweening(this.hero)) {
-                            this.hero.setRotation(0);
-                        }
                         console.log('Hero grounded - Jump count reset');
                     }
 
+                    // Running animation - still uses touching.down else it looks weird visually. should be ok due to jumpCount = 0 req
                     if (this.hero.body.touching.down && this.jumpCount === 0) {
                         if (!this.heroBaseY) {
                             this.heroBaseY = Math.min(this.hero.y, this.floorY - 32);  // Never capture a position below floor
@@ -598,14 +619,14 @@
 
                     this.spikes.children.entries.forEach(spike => {
                         spike.x -= scrollDelta;
-                        if (spike.x < -100) {
+                        if (spike.x < -90) {
                             spike.destroy();
                         }
                     });
 
                     this.flyingSpikes.children.entries.forEach(spike => {
                         spike.rotation += 0.3;
-                        if (spike.x > 1100 || spike.x < -100 || spike.y > 1400 || spike.y < 200) {
+                        if (spike.x > 990 || spike.x < -90 || spike.y > 1400 || spike.y < 200) {
                             spike.destroy();
                         }
                     });
@@ -618,10 +639,23 @@
                     this.boulderHat.x = this.boulder.x;
                     this.boulderHat.y = this.boulder.y - 192 + Math.sin(time * 0.01) * 10;
 
-                    if (this.boulder.x > 1100 && !this.deathTitleShown && !this.titleSliding && this.gameState === 'dead') {
+                    if (this.boulder.x > 990 && !this.deathTitleShown && !this.titleSliding && this.gameState === 'dead') {
                         this.deathTitleShown = true;
                         this.slideTitleIn();
                     }
+                }
+            }
+
+            getSpikeSize(spikeType) {
+                switch (spikeType) {
+                    case 'spike1':
+                        return { width: this.SPIKE1_WIDTH, height: this.SPIKE1_HEIGHT };
+                    case 'spike2':
+                        return { width: this.SPIKE2_WIDTH, height: this.SPIKE2_HEIGHT };
+                    case 'spike3':
+                        return { width: this.SPIKE3_WIDTH, height: this.SPIKE3_HEIGHT };
+                    default:
+                        return { width: this.SPIKE2_WIDTH, height: this.SPIKE2_HEIGHT };
                 }
             }
 
@@ -631,16 +665,17 @@
 
                 const spikeType = Phaser.Utils.Array.GetRandom(spikeTypes);
                 const position = Phaser.Utils.Array.GetRandom(positions);
+                const spikeSize = this.getSpikeSize(spikeType);
 
                 let spike;
                 if (position === 'ground') {
-                    spike = this.spikes.create(1100, this.floorY, spikeType);
+                    spike = this.spikes.create(990, this.floorY, spikeType);
                     spike.setOrigin(0.5, 1);
-                    spike.setScale(0.5);
+                    spike.setDisplaySize(spikeSize.width, spikeSize.height);
                 } else {
-                    spike = this.spikes.create(1100, this.ceilingY + 125, spikeType);
+                    spike = this.spikes.create(990, this.ceilingY + 125, spikeType);
                     spike.setOrigin(0.5, 0);
-                    spike.setScale(0.5);
+                    spike.setDisplaySize(spikeSize.width, spikeSize.height);
                     spike.setFlipY(true);
                 }
 
@@ -650,19 +685,12 @@
                 console.log('Spawning', position, spikeType, '- Y:', spike.y, '- Current interval:', this.getCurrentSpikeInterval());
             }
 
-            heroHitPlatform(hero, platform) {
-                if (platform.y < this.floorY) {
-                    this.hero.body.setVelocityY(3000);
-                    this.hero.body.setGravityY(4800);
-                    this.jumpCount = 0;
-                    this.ceilingSound.play(); // Play ceiling hit sound
-                    console.log('Hero hit ceiling - slamming down!');
-                }
-            }
-
             hitSpike(hero, spike) {
                 // Prevent multiple hits with invulnerability frames
                 if (this.isInvulnerable) return;
+
+                // Record when we hit a spike
+                this.lastSpikeHitTime = this.time.now;
 
                 if (this.hitPoints > 0) {
                     // Player has hit points - use one up instead of dying
@@ -686,13 +714,14 @@
 
                     // Set invulnerability frames to prevent multiple hits
                     this.isInvulnerable = true;
-                    this.time.delayedCall(500, () => {
+                    this.time.delayedCall(this.INVUL_DURATION, () => {
                         this.isInvulnerable = false;
                     });
 
                     // Make the spike fly away
                     const flyingSpike = this.flyingSpikes.create(spike.x, spike.y, spike.texture.key);
-                    flyingSpike.setScale(0.5);
+                    const spikeSize = this.getSpikeSize(spike.texture.key);
+                    flyingSpike.setDisplaySize(spikeSize.width, spikeSize.height);
                     flyingSpike.setFlipY(spike.flipY);
                     flyingSpike.body.setVelocity(
                         Phaser.Math.Between(300, 600),
@@ -711,7 +740,8 @@
 
             boulderHitSpike(boulder, spike) {
                 const flyingSpike = this.flyingSpikes.create(spike.x, spike.y, spike.texture.key);
-                flyingSpike.setScale(0.5);
+                const spikeSize = this.getSpikeSize(spike.texture.key);
+                flyingSpike.setDisplaySize(spikeSize.width, spikeSize.height);
                 flyingSpike.setFlipY(spike.flipY);
                 flyingSpike.body.setVelocity(
                     Phaser.Math.Between(300, 600),
@@ -734,7 +764,7 @@
 
         const config = {
             type: Phaser.AUTO,
-            width: 1000,
+            width: 900,
             height: 1600,
             parent: 'game-container',
             physics: {

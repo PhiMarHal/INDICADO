@@ -25,7 +25,7 @@
             height: 100vh;
             position: relative;
             margin: 0 auto;
-            max-width: 600px;
+            max-width: 540px;
             max-height: 100vh;
         }
     </style>
@@ -108,9 +108,9 @@
             }
 
             create() {
-                this.add.rectangle(500, 150, 1000, 300, 0x000000);
-                this.gameArea = this.add.rectangle(500, 800, 1000, 1000, 0x87CEEB);
-                this.add.rectangle(500, 1450, 1000, 300, 0x000000);
+                this.add.rectangle(450, 150, 900, 300, 0x000000);
+                this.gameArea = this.add.rectangle(450, 800, 900, 1000, 0x87CEEB);
+                this.add.rectangle(450, 1450, 900, 300, 0x000000);
 
                 // Color progression for difficulty steps - lighter tones
                 this.areaColors = [
@@ -126,7 +126,7 @@
 
                 this.floorTiles = [];
                 for (let i = 0; i < 3; i++) {
-                    const tile = this.add.tileSprite(i * 1500, this.floorY, 3000, 250, 'floor');
+                    const tile = this.add.tileSprite(i * 1350, this.floorY, 2700, 250, 'floor');
                     tile.setOrigin(0, 0);
                     tile.setScale(0.5);
                     this.floorTiles.push(tile);
@@ -134,34 +134,34 @@
 
                 this.ceilingTiles = [];
                 for (let i = 0; i < 3; i++) {
-                    const tile = this.add.tileSprite(i * 1500, this.ceilingY, 3000, 250, 'floor');
+                    const tile = this.add.tileSprite(i * 1350, this.ceilingY, 2700, 250, 'floor');
                     tile.setOrigin(0, 1);
                     tile.setScale(0.5, -0.5);
                     this.ceilingTiles.push(tile);
                 }
 
                 this.platforms = this.physics.add.staticGroup();
-                this.ground = this.add.rectangle(500, this.floorY + 20, 2000, 40, 0xffffff);
+                this.ground = this.add.rectangle(450, this.floorY + 20, 1800, 40, 0xffffff);
                 this.ground.setVisible(false);
                 this.physics.add.existing(this.ground, true);
                 this.platforms.add(this.ground);
 
-                this.ceiling = this.add.rectangle(500, this.ceilingY + 105, 2000, 40, 0xffffff);
+                this.ceiling = this.add.rectangle(450, this.ceilingY + 105, 1800, 40, 0xffffff);
                 this.ceiling.setVisible(false);
                 this.physics.add.existing(this.ceiling, true);
                 this.platforms.add(this.ceiling);
 
-                this.hero = this.physics.add.sprite(250, 1000, 'hero');
+                this.hero = this.physics.add.sprite(225, 1000, 'hero');
                 this.hero.setDisplaySize(64, 64);
                 this.hero.setBounce(0.1);
                 this.hero.setCollideWorldBounds(true);
 
-                this.boulder = this.physics.add.sprite(-200, this.floorY - 192, 'rock');
+                this.boulder = this.physics.add.sprite(-192, this.floorY - 192, 'rock');
                 this.boulder.setDisplaySize(384, 384);
                 this.boulder.body.setSize(470, 470); // no idea why 512x512 won't fit
                 this.boulder.setVisible(false);
 
-                this.boulderHat = this.add.sprite(-200, this.floorY - 320, 'hat');
+                this.boulderHat = this.add.sprite(-192, this.floorY - 320, 'hat');
                 this.boulderHat.setDisplaySize(256, 256);
                 this.boulderHat.setVisible(false);
 
@@ -177,7 +177,7 @@
 
                 // Create hit point sprites in the black void (bottom area)
                 this.hitPointSprites = [];
-                const startX = 320;
+                const startX = 256;
                 for (let i = 0; i < this.maxHitPoints; i++) {
                     const hitPoint = this.add.sprite(startX + (i * 128), this.hitPointBaseY, 'hero');
                     hitPoint.setDisplaySize(128, 128);
@@ -186,14 +186,14 @@
                     this.hitPointTweens.push(null); // Track tween for each hit point
                 }
 
-                this.timerText = this.add.text(500, 150, '00:00:00', {
+                this.timerText = this.add.text(450, 150, '00:00:00', {
                     fontSize: '128px',
                     fill: '#FFFFFF',
                     fontFamily: 'monospace'
                 }).setOrigin(0.5);
 
-                this.playButton = this.add.rectangle(500, 1450, 700, 200, 0x000000);
-                this.playButtonText = this.add.text(500, 1450, '', {
+                this.playButton = this.add.rectangle(450, 1450, 630, 200, 0x000000);
+                this.playButtonText = this.add.text(450, 1450, '', {
                     fontSize: '128px',
                     fill: '#C1FD50',
                     fontFamily: '"Times New Roman", Times, serif',
@@ -225,10 +225,10 @@
                 this.physics.add.overlap(this.hero, this.spikes, this.hitSpike, null, this);
                 this.physics.add.overlap(this.boulder, this.spikes, this.boulderHitSpike, null, this);
 
-                this.physics.world.setBounds(0, this.gameAreaTop, 1000, this.gameAreaHeight);
+                this.physics.world.setBounds(0, this.gameAreaTop, 900, this.gameAreaHeight);
 
-                this.titlePic = this.add.image(500, 800, 'titlepic');
-                this.titlePic.setDisplaySize(1200, 760);
+                this.titlePic = this.add.image(450, 800, 'titlepic');
+                this.titlePic.setDisplaySize(1080, 760);
                 this.titlePic.setDepth(1000);
 
                 this.titleSliding = false;
@@ -258,18 +258,18 @@
 
                 // Completely reset boulder state
                 this.boulder.setVisible(true);
-                this.boulder.x = 50;
+                this.boulder.x = 32;
                 this.boulder.y = this.floorY - 192;
                 this.boulder.body.setVelocity(0, 0); // Clear any accumulated velocity
                 this.boulder.body.setAngularVelocity(0); // Clear rotation velocity
                 this.boulder.setRotation(0); // Reset visual rotation
 
                 this.boulderHat.setVisible(true);
-                this.boulderHat.x = 50;
+                this.boulderHat.x = 32;
                 this.boulderHat.y = this.boulder.y - 128;
 
                 // Reset hero position
-                this.hero.x = 250;
+                this.hero.x = 240;
                 this.hero.y = this.floorY - 32;
                 this.hero.body.setVelocity(0, 0);
                 this.hero.body.setGravityY(this.GRAVITY);
@@ -390,7 +390,7 @@
 
                 this.tweens.add({
                     targets: this.titlePic,
-                    x: -1000,
+                    x: -900,
                     duration: 800,
                     ease: 'Power2',
                     onComplete: () => {
@@ -404,12 +404,12 @@
                 if (this.titleSliding) return;
 
                 this.titleSliding = true;
-                this.titlePic.x = 1500;
+                this.titlePic.x = 1350;
                 this.titlePic.setVisible(true);
 
                 this.tweens.add({
                     targets: this.titlePic,
-                    x: 500,
+                    x: 450,
                     duration: 800,
                     ease: 'Power2',
                     onComplete: () => {
@@ -418,10 +418,10 @@
                         // Reset boulder first (before UI elements)
                         this.boulderSound.stop();
                         this.boulder.setVisible(false);
-                        this.boulder.x = -200;
+                        this.boulder.x = -180;
                         this.boulder.y = this.floorY - 192;
                         this.boulderHat.setVisible(false);
-                        this.boulderHat.x = -200;
+                        this.boulderHat.x = -180;
                         this.boulderHat.y = this.boulder.y - 128;
 
                         // Make sure we reset spikes, so collisions don't happen again
@@ -604,14 +604,14 @@
 
                     this.spikes.children.entries.forEach(spike => {
                         spike.x -= scrollDelta;
-                        if (spike.x < -100) {
+                        if (spike.x < -90) {
                             spike.destroy();
                         }
                     });
 
                     this.flyingSpikes.children.entries.forEach(spike => {
                         spike.rotation += 0.3;
-                        if (spike.x > 1100 || spike.x < -100 || spike.y > 1400 || spike.y < 200) {
+                        if (spike.x > 990 || spike.x < -90 || spike.y > 1400 || spike.y < 200) {
                             spike.destroy();
                         }
                     });
@@ -624,7 +624,7 @@
                     this.boulderHat.x = this.boulder.x;
                     this.boulderHat.y = this.boulder.y - 192 + Math.sin(time * 0.01) * 10;
 
-                    if (this.boulder.x > 1100 && !this.deathTitleShown && !this.titleSliding && this.gameState === 'dead') {
+                    if (this.boulder.x > 990 && !this.deathTitleShown && !this.titleSliding && this.gameState === 'dead') {
                         this.deathTitleShown = true;
                         this.slideTitleIn();
                     }
@@ -654,11 +654,11 @@
 
                 let spike;
                 if (position === 'ground') {
-                    spike = this.spikes.create(1100, this.floorY, spikeType);
+                    spike = this.spikes.create(990, this.floorY, spikeType);
                     spike.setOrigin(0.5, 1);
                     spike.setDisplaySize(spikeSize.width, spikeSize.height);
                 } else {
-                    spike = this.spikes.create(1100, this.ceilingY + 125, spikeType);
+                    spike = this.spikes.create(990, this.ceilingY + 125, spikeType);
                     spike.setOrigin(0.5, 0);
                     spike.setDisplaySize(spikeSize.width, spikeSize.height);
                     spike.setFlipY(true);
@@ -749,7 +749,7 @@
 
         const config = {
             type: Phaser.AUTO,
-            width: 1000,
+            width: 900,
             height: 1600,
             parent: 'game-container',
             physics: {
